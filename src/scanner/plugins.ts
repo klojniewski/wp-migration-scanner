@@ -1,4 +1,6 @@
 import type { DetectedPlugin, PluginCategory, PluginScanResult } from "../types";
+import { type Fetcher, DEFAULT_HEADERS } from "./http";
+import { titleCase } from "./utils";
 
 interface KnownPlugin {
   name: string;
@@ -71,7 +73,6 @@ interface SignatureMatch {
 }
 
 const SIGNATURES: SignatureMatch[] = [
-  // Page builders — CSS class detection
   {
     slug: "elementor",
     name: "Elementor",
@@ -90,8 +91,6 @@ const SIGNATURES: SignatureMatch[] = [
     category: "page-builder",
     test: (html) => /class="[^"]*vc_row/.test(html) || /class="[^"]*wpb_/.test(html),
   },
-
-  // SEO — HTML comments and meta tags
   {
     slug: "wordpress-seo",
     name: "Yoast SEO",
@@ -110,24 +109,18 @@ const SIGNATURES: SignatureMatch[] = [
     category: "seo",
     test: (html) => html.includes("<!-- All in One SEO"),
   },
-
-  // Forms — CSS classes
   {
     slug: "contact-form-7",
     name: "Contact Form 7",
     category: "forms",
     test: (html) => /class="[^"]*wpcf7[-\s"]/.test(html),
   },
-
-  // E-commerce — body classes and elements
   {
     slug: "woocommerce",
     name: "WooCommerce",
     category: "ecommerce",
     test: (html) => /class="[^"]*woocommerce[-\s"]/.test(html),
   },
-
-  // Cache — HTML comments
   {
     slug: "wp-rocket",
     name: "WP Rocket",
@@ -158,8 +151,6 @@ const SIGNATURES: SignatureMatch[] = [
     category: "cache",
     test: (html) => html.includes("<!-- WP Fastest Cache"),
   },
-
-  // Multilingual
   {
     slug: "sitepress-multilingual-cms",
     name: "WPML",
@@ -174,11 +165,11 @@ const SIGNATURES: SignatureMatch[] = [
   },
 ];
 
-function titleCase(slug: string): string {
-  return slug
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
+const CATEGORY_ORDER: PluginCategory[] = [
+  "page-builder", "seo", "forms", "ecommerce",
+  "multilingual", "cache", "analytics", "security", "other",
+];
+const ORDER_MAP = new Map(CATEGORY_ORDER.map((c, i) => [c, i]));
 
 function resolvePlugin(slug: string): DetectedPlugin {
   const known = KNOWN_PLUGINS.get(slug);
@@ -188,17 +179,8 @@ function resolvePlugin(slug: string): DetectedPlugin {
   return { slug, name: titleCase(slug), category: "other" };
 }
 
-export async function detectPlugins(baseUrl: string): Promise<PluginScanResult> {
-  const res = await fetch(baseUrl, {
-    headers: { "User-Agent": "WP-Migration-Scanner/0.1" },
-    signal: AbortSignal.timeout(15000),
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} fetching homepage`);
-  }
-
-  const html = await res.text();
+/** Pure parser — extracts plugin signatures from HTML string */
+export function parsePluginSignatures(html: string): PluginScanResult {
   const found = new Map<string, DetectedPlugin>();
 
   // Layer 1: Asset path extraction
@@ -219,18 +201,28 @@ export async function detectPlugins(baseUrl: string): Promise<PluginScanResult> 
   }
 
   const plugins = Array.from(found.values());
-
-  // Sort by category order, then alphabetically within category
-  const categoryOrder: PluginCategory[] = [
-    "page-builder", "seo", "forms", "ecommerce",
-    "multilingual", "cache", "analytics", "security", "other",
-  ];
-  const orderMap = new Map(categoryOrder.map((c, i) => [c, i]));
   plugins.sort((a, b) => {
-    const catDiff = (orderMap.get(a.category) ?? 99) - (orderMap.get(b.category) ?? 99);
+    const catDiff = (ORDER_MAP.get(a.category) ?? 99) - (ORDER_MAP.get(b.category) ?? 99);
     if (catDiff !== 0) return catDiff;
     return a.name.localeCompare(b.name);
   });
 
   return { plugins, totalDetected: plugins.length };
+}
+
+/** Fetch wrapper — fetches homepage HTML and runs plugin detection */
+export async function fetchPlugins(
+  baseUrl: string,
+  fetcher: Fetcher = globalThis.fetch,
+): Promise<PluginScanResult> {
+  const res = await fetcher(baseUrl, {
+    headers: DEFAULT_HEADERS,
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} fetching homepage`);
+  }
+
+  return parsePluginSignatures(await res.text());
 }

@@ -1,6 +1,44 @@
 # **PRD: WordPress Migration Scanner**
 
-**Owner:** Chris / Jakub **Status:** Draft v0.2
+**Owner:** Chris / Jakub **Status:** Draft v0.3
+
+---
+
+## **Implementation Status**
+
+### Done
+
+- **Content Structure Map (Section 1)** — fully implemented
+  - REST API scanner: fetches types, taxonomies, counts, sample titles via `/wp-json/wp/v2/`
+  - Sitemap fallback: parses `sitemap.xml` / `sitemap_index.xml` / `wp-sitemap.xml`, groups URLs by pattern
+  - RSS fallback: extracts post titles and categories from `/feed/`
+  - Graceful degradation: each module fails independently, partial results still shown
+- **URL Structure (Section 3)** — fully implemented
+  - URL pattern detection from sitemap data (e.g. `/blog/{slug}/`, `/case-studies/{slug}/`)
+  - Total indexed URL count
+  - Multilingual detection (subdirectory, subdomain, hreflang patterns)
+- **Detected Plugins (Section 4)** — fully implemented
+  - Asset path extraction (`/wp-content/plugins/{slug}/`) from homepage HTML
+  - HTML signature matching (comments, CSS classes, meta tags) for ~17 signature patterns
+  - Known plugins database (~40 entries) covering page builders, SEO, forms, e-commerce, multilingual, cache, analytics, security
+  - Plugins grouped by category, page builders highlighted
+- **CLI tool** — `npx tsx src/cli.ts <url>` outputs formatted report with all sections
+- **Web UI** — Next.js app with URL input, scan progress, and results display
+  - Content types table with counts, taxonomies, sample titles
+  - URL structure card with patterns and multilingual info
+  - Detected plugins card with category-grouped badges
+  - API route (`POST /api/scan`) powering the frontend
+- **Infrastructure** — Next.js 15, TypeScript, shadcn/ui components, redirect-following URL normalization
+
+### Not Started
+
+- **Website Architecture (Section 2)** — navigation structure extraction, page hierarchy detection, site sections/areas
+  - Requires HTML crawling of homepage + inner pages to extract `<nav>` elements, menu structure, parent/child relationships
+  - Most complex remaining feature — needs a lightweight HTML crawler with DOM parsing
+- **Inner page sampling** — scanning strategy currently only fetches homepage HTML for plugin detection; PRD specifies "homepage + sampled inner pages" for richer plugin/architecture data
+- **Lead magnet CTA** — "We found X — your actual site likely has more. Want a full audit?" messaging
+- **Deployment** — hosting on pagepro.co (or standalone), production configuration
+- **Known limitations messaging** — showing users caveats about detection limits (Section "Known Limitations")
 
 ---
 

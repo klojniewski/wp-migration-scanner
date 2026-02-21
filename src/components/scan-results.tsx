@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ScanResult } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,14 @@ interface ScanResultsProps {
 
 export function ScanResults({ data, onReset }: ScanResultsProps) {
   const scannedAt = new Date(data.scannedAt).toLocaleString();
+  const [copied, setCopied] = useState(false);
+
+  function handleCopyLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   return (
     <div className="w-full max-w-3xl space-y-6">
@@ -27,9 +36,14 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
             Scanned {scannedAt}
           </p>
         </div>
-        <Badge variant={data.apiAvailable ? "default" : "secondary"}>
-          {data.apiAvailable ? "REST API" : "Fallback"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleCopyLink}>
+            {copied ? "Copied!" : "Copy report link"}
+          </Button>
+          <Badge variant={data.apiAvailable ? "default" : "secondary"}>
+            {data.apiAvailable ? "REST API" : "Fallback"}
+          </Badge>
+        </div>
       </div>
 
       <Separator />

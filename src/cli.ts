@@ -1,12 +1,12 @@
 import { scan } from "./scanner";
-import type { ContentType, PluginCategory, ScanResult } from "./types";
+import type { PluginCategory, ScanResult } from "./types";
 
-function padDots(label: string, count: string, width = 40): string {
+export function padDots(label: string, count: string, width = 40): string {
   const dots = ".".repeat(Math.max(2, width - label.length - count.length));
   return `${label} ${dots} ${count}`;
 }
 
-function formatReport(result: ScanResult): string {
+export function formatReport(result: ScanResult): string {
   const lines: string[] = [];
 
   if (result.apiAvailable) {
@@ -98,7 +98,6 @@ function formatReport(result: ScanResult): string {
       other: "Other",
     };
 
-    // Group plugins by category
     const groups = new Map<PluginCategory, string[]>();
     for (const p of result.detectedPlugins.plugins) {
       const list = groups.get(p.category) || [];
@@ -146,4 +145,6 @@ async function main() {
   }
 }
 
-main();
+// Only run main() when executed directly, not when imported for testing
+const isDirectRun = process.argv[1]?.replace(/\.ts$/, "").endsWith("cli");
+if (isDirectRun) main();

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { ScanResult } from "@/types";
 import { UrlInputForm } from "@/components/url-input-form";
 import { ScanProgress } from "@/components/scan-progress";
@@ -14,11 +15,26 @@ type State =
   | { phase: "results"; data: ScanResult }
   | { phase: "error"; message: string };
 
-export function ScannerPage() {
-  const [state, setState] = useState<State>({ phase: "idle" });
+function setUrlParam(url: string | null) {
+  const params = new URLSearchParams(window.location.search);
+  if (url) {
+    params.set("url", url);
+  } else {
+    params.delete("url");
+  }
+  const qs = params.toString();
+  const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  window.history.replaceState(null, "", newUrl);
+}
 
-  async function handleScan(url: string) {
+export function ScannerPage() {
+  const searchParams = useSearchParams();
+  const [state, setState] = useState<State>({ phase: "idle" });
+  const didAutoScan = useRef(false);
+
+  const handleScan = useCallback(async (url: string) => {
     setState({ phase: "scanning", url });
+    setUrlParam(url);
 
     try {
       const res = await fetch("/api/scan", {
@@ -38,10 +54,19 @@ export function ScannerPage() {
     } catch {
       setState({ phase: "error", message: "Network error. Please try again." });
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const urlParam = searchParams.get("url");
+    if (urlParam && !didAutoScan.current) {
+      didAutoScan.current = true;
+      handleScan(urlParam);
+    }
+  }, [searchParams, handleScan]);
 
   function handleReset() {
     setState({ phase: "idle" });
+    setUrlParam(null);
   }
 
   return (

@@ -1,4 +1,6 @@
-import type { ContentType, TaxonomyRef, ScanResult } from "../types";
+import type { ContentType, TaxonomyRef } from "../types";
+import { type Fetcher, fetchJson, DEFAULT_HEADERS } from "./http";
+import { decodeHtmlEntities, toErrorMessage } from "./utils";
 
 const SKIP_TYPES = new Set([
   "attachment",
@@ -24,49 +26,52 @@ const SKIP_TAXONOMIES = new Set([
   "elementor_library_category",
 ]);
 
-function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&#8217;/g, "\u2019")
-    .replace(/&#8216;/g, "\u2018")
-    .replace(/&#8211;/g, "\u2013")
-    .replace(/&#8212;/g, "\u2014")
-    .replace(/&#038;/g, "&");
-}
-
-interface WpType {
+export interface WpType {
   name: string;
   slug: string;
   rest_base: string;
   taxonomies: string[];
 }
 
-interface WpTaxonomy {
+export interface WpTaxonomy {
   name: string;
   slug: string;
   rest_base: string;
   types: string[];
 }
 
-async function fetchJson(url: string): Promise<Response> {
-  const res = await fetch(url, {
-    headers: { "User-Agent": "WP-Migration-Scanner/0.1" },
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  return res;
+/** Pure parser — filters out internal WordPress types */
+export function parseTypesResponse(json: Record<string, WpType>): WpType[] {
+  return Object.values(json).filter((t) => !SKIP_TYPES.has(t.slug));
 }
 
-export async function probeApi(baseUrl: string): Promise<boolean> {
+/** Pure parser — filters out internal WordPress taxonomies */
+export function parseTaxonomiesResponse(json: Record<string, WpTaxonomy>): WpTaxonomy[] {
+  return Object.values(json).filter((t) => !SKIP_TAXONOMIES.has(t.slug));
+}
+
+/** Pure parser — extracts count and sample titles from API content response */
+export function parseContentItems(
+  json: Array<{ title: { rendered: string } }>,
+  totalHeader: string | null,
+): { count: number; samples: string[] } {
+  const count = parseInt(totalHeader || "0", 10);
+  const samples = json
+    .map((item) => decodeHtmlEntities(item.title?.rendered || ""))
+    .filter(Boolean)
+    .slice(0, 5);
+  return { count, samples };
+}
+
+export async function probeApi(
+  baseUrl: string,
+  fetcher: Fetcher = globalThis.fetch,
+): Promise<boolean> {
   try {
-    const res = await fetch(`${baseUrl}/wp-json/`, {
+    const res = await fetcher(`${baseUrl}/wp-json/`, {
       method: "HEAD",
-      headers: { "User-Agent": "WP-Migration-Scanner/0.1" },
-      signal: AbortSignal.timeout(5000),
+      headers: DEFAULT_HEADERS,
+      signal: AbortSignal.timeout(5_000),
     });
     return res.ok;
   } catch {
@@ -74,29 +79,43 @@ export async function probeApi(baseUrl: string): Promise<boolean> {
   }
 }
 
-export async function scanViaApi(baseUrl: string): Promise<ScanResult> {
+export interface ApiScanResult {
+  contentTypes: ContentType[];
+  errors: string[];
+}
+
+/** Fetch wrapper — orchestrates multi-stage API scanning */
+export async function scanViaApi(
+  baseUrl: string,
+  fetcher: Fetcher = globalThis.fetch,
+): Promise<ApiScanResult> {
   const errors: string[] = [];
   const api = `${baseUrl}/wp-json/wp/v2`;
 
   // Fetch types and taxonomies in parallel
   const [typesRes, taxRes] = await Promise.all([
-    fetchJson(`${api}/types`),
-    fetchJson(`${api}/taxonomies`),
+    fetchJson(`${api}/types`, fetcher),
+    fetchJson(`${api}/taxonomies`, fetcher),
   ]);
+
+  if (!typesRes || !taxRes) {
+    throw new Error("Failed to fetch types or taxonomies from REST API");
+  }
 
   const typesData = (await typesRes.json()) as Record<string, WpType>;
   const taxData = (await taxRes.json()) as Record<string, WpTaxonomy>;
 
-  // Build taxonomy lookup: slug → { name, rest_base, count }
+  const typeEntries = parseTypesResponse(typesData);
+  const taxEntries = parseTaxonomiesResponse(taxData);
+
+  // Build taxonomy lookup: slug → { name, slug, count }
   const taxLookup = new Map<string, { name: string; slug: string; rest_base: string; count: number }>();
 
-  // Fetch term counts for all taxonomies in parallel (skip internal ones)
-  const taxEntries = Object.values(taxData).filter((t) => !SKIP_TAXONOMIES.has(t.slug));
   const taxCountResults = await Promise.allSettled(
     taxEntries.map(async (tax) => {
-      const res = await fetch(`${api}/${tax.rest_base}?per_page=1`, {
-        headers: { "User-Agent": "WP-Migration-Scanner/0.1" },
-        signal: AbortSignal.timeout(10000),
+      const res = await fetcher(`${api}/${tax.rest_base}?per_page=1`, {
+        headers: DEFAULT_HEADERS,
+        signal: AbortSignal.timeout(10_000),
       });
       const total = res.ok ? parseInt(res.headers.get("X-WP-Total") || "0", 10) : 0;
       return { slug: tax.slug, name: tax.name, rest_base: tax.rest_base, count: total };
@@ -110,14 +129,12 @@ export async function scanViaApi(baseUrl: string): Promise<ScanResult> {
   }
 
   // Fetch content for each type in parallel
-  const typeEntries = Object.values(typesData).filter((t) => !SKIP_TYPES.has(t.slug));
-
   const contentResults = await Promise.allSettled(
     typeEntries.map(async (type) => {
       try {
-        const res = await fetch(`${api}/${type.rest_base}?per_page=5`, {
-          headers: { "User-Agent": "WP-Migration-Scanner/0.1" },
-          signal: AbortSignal.timeout(10000),
+        const res = await fetcher(`${api}/${type.rest_base}?per_page=5`, {
+          headers: DEFAULT_HEADERS,
+          signal: AbortSignal.timeout(10_000),
         });
 
         if (!res.ok) {
@@ -125,14 +142,9 @@ export async function scanViaApi(baseUrl: string): Promise<ScanResult> {
           return null;
         }
 
-        const total = parseInt(res.headers.get("X-WP-Total") || "0", 10);
-        const items = (await res.json()) as Array<{ title: { rendered: string } }>;
-        const samples = items
-          .map((item) => decodeHtmlEntities(item.title?.rendered || ""))
-          .filter(Boolean)
-          .slice(0, 5);
+        const json = (await res.json()) as Array<{ title: { rendered: string } }>;
+        const { count, samples } = parseContentItems(json, res.headers.get("X-WP-Total"));
 
-        // Map taxonomy slugs to refs
         const taxonomies: TaxonomyRef[] = type.taxonomies
           .map((taxSlug) => taxLookup.get(taxSlug))
           .filter((t): t is NonNullable<typeof t> => t != null && t.count > 0)
@@ -141,7 +153,7 @@ export async function scanViaApi(baseUrl: string): Promise<ScanResult> {
         const contentType: ContentType = {
           name: type.name,
           slug: type.slug,
-          count: total,
+          count,
           isEstimate: false,
           samples,
           taxonomies,
@@ -149,7 +161,7 @@ export async function scanViaApi(baseUrl: string): Promise<ScanResult> {
 
         return contentType;
       } catch (err) {
-        errors.push(`Error fetching ${type.name}: ${err instanceof Error ? err.message : String(err)}`);
+        errors.push(`Error fetching ${type.name}: ${toErrorMessage(err)}`);
         return null;
       }
     })
@@ -160,13 +172,5 @@ export async function scanViaApi(baseUrl: string): Promise<ScanResult> {
     .map((r) => r.value)
     .filter((ct): ct is ContentType => ct != null && ct.count > 0);
 
-  return {
-    url: baseUrl,
-    scannedAt: new Date().toISOString(),
-    apiAvailable: true,
-    contentTypes,
-    urlStructure: null,
-    detectedPlugins: null,
-    errors,
-  };
+  return { contentTypes, errors };
 }
