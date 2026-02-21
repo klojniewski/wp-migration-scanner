@@ -147,7 +147,7 @@ export async function scanViaApi(
 
         const taxonomies: TaxonomyRef[] = type.taxonomies
           .map((taxSlug) => taxLookup.get(taxSlug))
-          .filter((t): t is NonNullable<typeof t> => t != null && t.count > 0)
+          .filter((t): t is NonNullable<typeof t> => t != null)
           .map((t) => ({ name: t.name, slug: t.slug, count: t.count }));
 
         const contentType: ContentType = {

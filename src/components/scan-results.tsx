@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ContentTypesTable } from "@/components/content-types-table";
+import { ContentRelationshipsCard } from "@/components/content-relationships-card";
 import { DetectedPluginsCard } from "@/components/detected-plugins-card";
 import { UrlStructureCard } from "@/components/url-structure-card";
 import { ScanWarnings } from "@/components/scan-warnings";
@@ -50,6 +51,9 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
 
       {/* Content Types */}
       <ContentTypesTable contentTypes={data.contentTypes} />
+
+      {/* Content Relationships Diagram */}
+      <ContentRelationshipsCard contentTypes={data.contentTypes} />
 
       {/* Detected Plugins */}
       {data.detectedPlugins && data.detectedPlugins.plugins.length > 0 && (
