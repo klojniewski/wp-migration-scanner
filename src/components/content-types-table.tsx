@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { ComplexityLevel, ContentType, TaxonomyRef } from "@/types";
 
 const COMPLEXITY_CONFIG: Record<
@@ -27,63 +27,67 @@ const COMPLEXITY_CONFIG: Record<
   },
 };
 
-function TaxonomyBadge({ tax }: { tax: TaxonomyRef }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const hasTerms = tax.terms.length > 0;
-
+function TaxonomyModal({ tax, onClose }: { tax: TaxonomyRef; onClose: () => void }) {
   useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   return (
-    <div ref={ref} className="relative inline-flex">
-      <button
-        type="button"
-        onClick={hasTerms ? () => setOpen((o) => !o) : undefined}
-        className={`text-[11px] font-mono py-0.5 px-2 rounded bg-[var(--report-surface-3)] text-[var(--report-text-secondary)] whitespace-nowrap border-0 ${
-          hasTerms
-            ? "cursor-pointer hover:bg-[var(--report-surface-2)] hover:text-[var(--report-text)] transition-colors"
-            : "cursor-default"
-        }`}
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60" />
+      <div
+        className="relative z-10 w-[320px] max-h-[70vh] bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
       >
-        {tax.name} ({tax.count})
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] max-w-[260px] bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-lg">
-          <div className="py-2 px-3 border-b border-[var(--border)]">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--report-text-muted)]">
-              {tax.name}
+        <div className="flex items-center justify-between py-3 px-4 border-b border-[var(--border)]">
+          <span className="text-[13px] font-semibold text-[var(--report-text)]">
+            {tax.name}
+          </span>
+          <span className="text-[12px] font-mono text-[var(--report-text-muted)]">
+            {tax.count} total
+          </span>
+        </div>
+        <ul className="flex-1 overflow-y-auto py-2 px-4 list-none">
+          {tax.terms.map((term, i) => (
+            <li
+              key={`${i}-${term}`}
+              className="text-[13px] text-[var(--report-text-secondary)] py-1 border-b border-[var(--border)] last:border-b-0"
+            >
+              {term}
+            </li>
+          ))}
+        </ul>
+        {tax.count > tax.terms.length && (
+          <div className="py-2.5 px-4 border-t border-[var(--border)]">
+            <span className="text-[12px] text-[var(--report-text-muted)] italic">
+              and {tax.count - tax.terms.length} more
             </span>
           </div>
-          <ul className="max-h-[200px] overflow-y-auto py-1.5 px-3 list-none">
-            {tax.terms.map((term, i) => (
-              <li
-                key={`${i}-${term}`}
-                className="text-[12px] text-[var(--report-text-secondary)] py-0.5"
-              >
-                {term}
-              </li>
-            ))}
-          </ul>
-          {tax.count > tax.terms.length && (
-            <div className="py-1.5 px-3 border-t border-[var(--border)]">
-              <span className="text-[11px] text-[var(--report-text-muted)] italic">
-                and {tax.count - tax.terms.length} more
-              </span>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
+  );
+}
+
+function TaxonomyBadge({ tax, onOpen }: { tax: TaxonomyRef; onOpen: (tax: TaxonomyRef) => void }) {
+  const hasTerms = tax.terms.length > 0;
+
+  return (
+    <button
+      type="button"
+      onClick={hasTerms ? () => onOpen(tax) : undefined}
+      className={`text-[11px] font-mono py-0.5 px-2 rounded bg-[var(--report-surface-3)] text-[var(--report-text-secondary)] whitespace-nowrap border-0 ${
+        hasTerms
+          ? "cursor-pointer hover:bg-[var(--report-surface-2)] hover:text-[var(--report-text)] transition-colors"
+          : "cursor-default"
+      }`}
+    >
+      {tax.name} ({tax.count})
+    </button>
   );
 }
 
@@ -92,6 +96,8 @@ interface ContentTypesTableProps {
 }
 
 export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
+  const [activeTax, setActiveTax] = useState<TaxonomyRef | null>(null);
+
   if (contentTypes.length === 0) return null;
 
   const sorted = [...contentTypes].sort((a, b) => b.count - a.count);
@@ -198,7 +204,7 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
                     <div className="flex flex-wrap gap-1">
                       {ct.taxonomies.length > 0 ? (
                         ct.taxonomies.map((tax) => (
-                          <TaxonomyBadge key={tax.slug} tax={tax} />
+                          <TaxonomyBadge key={tax.slug} tax={tax} onOpen={setActiveTax} />
                         ))
                       ) : (
                         <span className="text-[11px] font-mono py-0.5 px-2 rounded bg-[var(--report-surface-3)] text-[var(--report-text-secondary)]">
@@ -231,6 +237,9 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
           </tbody>
         </table>
       </div>
+      {activeTax && (
+        <TaxonomyModal tax={activeTax} onClose={() => setActiveTax(null)} />
+      )}
     </section>
   );
 }
