@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
+
 interface ScanWarningsProps {
   errors: string[];
 }
@@ -8,19 +10,17 @@ export function ScanWarnings({ errors }: ScanWarningsProps) {
   if (errors.length === 0) return null;
 
   return (
-    <section className="py-10 border-b border-[var(--border)]">
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--report-accent)]">
-          Scan Warnings
-        </span>
-      </div>
+    <section className="py-8 border-b border-border">
+      <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-4">
+        Scan Warnings
+      </h2>
       <div className="flex flex-col gap-2">
         {errors.map((err, i) => (
           <div
             key={i}
-            className="flex items-center gap-2.5 py-2.5 px-4 bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius-sm)] text-[13px] text-[var(--report-text-secondary)] font-mono"
+            className="flex items-center gap-2.5 py-2.5 px-4 border border-border rounded-md text-sm text-muted-foreground font-mono bg-card"
           >
-            <span className="text-[var(--report-yellow)]">⚠</span>
+            <AlertTriangle className="w-3.5 h-3.5 text-[var(--report-yellow)] shrink-0" />
             {err}
           </div>
         ))}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 import type { ScanResult } from "@/types";
 import { UrlInputForm } from "@/components/url-input-form";
 import { ScanProgress } from "@/components/scan-progress";
@@ -21,7 +22,9 @@ function setUrlParam(url: string | null) {
     params.delete("url");
   }
   const qs = params.toString();
-  const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  const newUrl = qs
+    ? `${window.location.pathname}?${qs}`
+    : window.location.pathname;
   window.history.replaceState(null, "", newUrl);
 }
 
@@ -36,7 +39,6 @@ export function ScannerPage() {
 
     try {
       const res = await fetch(`/api/scan?url=${encodeURIComponent(url)}`);
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -46,7 +48,10 @@ export function ScannerPage() {
 
       setState({ phase: "results", data });
     } catch {
-      setState({ phase: "error", message: "Network error. Please try again." });
+      setState({
+        phase: "error",
+        message: "Network error. Please try again.",
+      });
     }
   }, []);
 
@@ -60,8 +65,10 @@ export function ScannerPage() {
 
   useEffect(() => {
     if (state.phase === "results") {
-      const domain = state.data.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-      document.title = `${domain} — WordPress Migration Scanner`;
+      const domain = state.data.url
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      document.title = `${domain} - WordPress Migration Scanner`;
     } else {
       document.title = "WordPress Migration Scanner";
     }
@@ -83,30 +90,34 @@ export function ScannerPage() {
       {state.phase === "scanning" && <ScanProgress url={state.url} />}
 
       {state.phase === "error" && (
-        <div className="w-full max-w-xl">
+        <div className="w-full max-w-lg">
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-[var(--report-accent)] rounded-[6px] flex items-center justify-center text-[14px] font-bold text-white">
+            <div className="flex items-center justify-center gap-2.5 mb-8">
+              <div className="w-8 h-8 bg-[var(--report-accent)] rounded-md flex items-center justify-center text-sm font-bold text-foreground">
                 P
               </div>
-              <span className="text-[14px] font-semibold tracking-[0.06em] uppercase text-[var(--report-text-secondary)]">
+              <span className="text-sm font-medium text-muted-foreground tracking-wide">
                 WordPress Migration Scanner
               </span>
             </div>
           </div>
-          <div className="bg-[var(--report-surface)] border border-[var(--report-red-dim)] rounded-[var(--radius)] p-8">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[var(--report-red)] text-lg">⚠</span>
-              <h2 className="text-[18px] font-semibold text-[var(--report-text)]">
-                Scan Failed
-              </h2>
+          <div className="border border-[var(--report-red-dim)] rounded-lg p-6 bg-card">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-8 h-8 rounded-md bg-[var(--report-red-dim)] flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 text-[var(--report-red)]" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground mb-1">
+                  Scan Failed
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {state.message}
+                </p>
+              </div>
             </div>
-            <p className="text-[14px] text-[var(--report-text-secondary)] mb-6">
-              {state.message}
-            </p>
             <button
               onClick={handleReset}
-              className="w-full h-10 rounded-lg border border-[var(--border)] bg-[var(--report-surface-2)] text-[var(--report-text-secondary)] text-[14px] font-medium transition-all hover:bg-[var(--report-surface-3)] hover:text-[var(--report-text)] cursor-pointer"
+              className="w-full h-10 rounded-md border border-border bg-secondary text-secondary-foreground text-sm font-medium transition-all hover:bg-accent cursor-pointer"
             >
               Try Again
             </button>

@@ -23,17 +23,18 @@ const CATEGORY_COLORS: Record<PluginCategory, string> = {
   cache: "var(--report-yellow)",
   analytics: "var(--report-blue)",
   security: "var(--report-yellow)",
-  other: "var(--report-text-muted)",
+  other: "var(--muted-foreground)",
 };
 
 interface DetectedPluginsCardProps {
   pluginScanResult: PluginScanResult;
 }
 
-export function DetectedPluginsCard({ pluginScanResult }: DetectedPluginsCardProps) {
+export function DetectedPluginsCard({
+  pluginScanResult,
+}: DetectedPluginsCardProps) {
   const { plugins, totalDetected } = pluginScanResult;
 
-  // Group by category
   const groups = new Map<PluginCategory, typeof plugins>();
   for (const p of plugins) {
     const list = groups.get(p.category) || [];
@@ -41,45 +42,47 @@ export function DetectedPluginsCard({ pluginScanResult }: DetectedPluginsCardPro
     groups.set(p.category, list);
   }
 
-  // Separate "other" from the rest
   const otherPlugins = groups.get("other") || [];
-  const mainGroups = Array.from(groups.entries()).filter(([cat]) => cat !== "other");
+  const mainGroups = Array.from(groups.entries()).filter(
+    ([cat]) => cat !== "other"
+  );
 
   return (
-    <section className="py-10 border-b border-[var(--border)]">
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--report-accent)]">
+    <section className="py-8 border-b border-border">
+      <div className="flex items-baseline justify-between mb-1.5">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Detected Plugins
-        </span>
-        <span className="text-[12px] text-[var(--report-text-muted)] font-mono">
+        </h2>
+        <span className="text-xs text-muted-foreground font-mono">
           {totalDetected} plugins from HTML source
         </span>
       </div>
-      <p className="text-[14px] text-[var(--report-text-secondary)] mb-6 max-w-[680px]">
-        Plugins identified from script paths, CSS classes, and HTML comments. Only plugins with frontend output are detectable — actual count is likely higher.
+      <p className="text-sm text-muted-foreground mb-5 max-w-2xl">
+        Plugins identified from script paths, CSS classes, and HTML comments.
+        Only plugins with frontend output are detectable - actual count is likely
+        higher.
       </p>
 
       <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
         {mainGroups.map(([category, categoryPlugins]) => (
           <div
             key={category}
-            className="bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] py-4 px-5"
+            className="border border-border rounded-lg py-4 px-5 bg-card"
           >
             <div
-              className="text-[11px] font-semibold uppercase tracking-[0.08em] mb-2.5"
+              className="text-xs font-medium uppercase tracking-wide mb-3"
               style={{ color: CATEGORY_COLORS[category] }}
             >
-              {category === "page-builder" ? "★ " : ""}
               {CATEGORY_LABELS[category]}
             </div>
-            <ul className="list-none flex flex-col gap-1.5">
+            <ul className="flex flex-col gap-2">
               {categoryPlugins.map((p) => (
                 <li
                   key={p.slug}
-                  className="text-[13px] text-[var(--report-text-secondary)] flex items-center gap-1.5"
+                  className="text-sm text-muted-foreground flex items-center gap-2"
                 >
                   <span
-                    className="w-[5px] h-[5px] rounded-full shrink-0"
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
                     style={{ background: CATEGORY_COLORS[category] }}
                   />
                   {p.name}
@@ -90,20 +93,17 @@ export function DetectedPluginsCard({ pluginScanResult }: DetectedPluginsCardPro
         ))}
 
         {otherPlugins.length > 0 && (
-          <div className="col-span-full bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] py-4 px-5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--report-text-muted)] mb-2.5">
+          <div className="col-span-full border border-border rounded-lg py-4 px-5 bg-card">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
               Other ({otherPlugins.length})
             </div>
-            <ul className="list-none flex flex-wrap gap-x-4 gap-y-1.5">
+            <ul className="flex flex-wrap gap-x-4 gap-y-2">
               {otherPlugins.map((p) => (
                 <li
                   key={p.slug}
-                  className="text-[13px] text-[var(--report-text-secondary)] flex items-center gap-1.5"
+                  className="text-sm text-muted-foreground flex items-center gap-2"
                 >
-                  <span
-                    className="w-[5px] h-[5px] rounded-full shrink-0"
-                    style={{ background: "var(--report-text-muted)" }}
-                  />
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-muted-foreground" />
                   {p.name}
                 </li>
               ))}

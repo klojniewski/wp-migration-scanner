@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const STATUS_MESSAGES = [
   "Connecting to site...",
@@ -45,35 +46,38 @@ export function ScanProgress({ url }: ScanProgressProps) {
   const displayUrl = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
   return (
-    <div className="w-full max-w-xl">
+    <div className="w-full max-w-lg">
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="w-8 h-8 bg-[var(--report-accent)] rounded-[6px] flex items-center justify-center text-[14px] font-bold text-white">
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <div className="w-8 h-8 bg-[var(--report-accent)] rounded-md flex items-center justify-center text-sm font-bold text-foreground">
             P
           </div>
-          <span className="text-[14px] font-semibold tracking-[0.06em] uppercase text-[var(--report-text-secondary)]">
+          <span className="text-sm font-medium text-muted-foreground tracking-wide">
             WordPress Migration Scanner
           </span>
         </div>
       </div>
 
-      <div className="bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] p-8">
-        <h2 className="text-[18px] font-semibold text-[var(--report-text)] text-center mb-1">
+      <div className="border border-border rounded-lg p-8 bg-card">
+        <div className="flex items-center justify-center mb-6">
+          <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+        </div>
+        <h2 className="text-base font-semibold text-foreground text-center mb-1">
           Scanning {displayUrl}
         </h2>
-        <p className="text-[13px] text-[var(--report-text-muted)] text-center mb-6 font-mono">
-          This usually takes 15–30 seconds
+        <p className="text-xs text-muted-foreground text-center mb-6 font-mono">
+          This usually takes 15-30 seconds
         </p>
 
         {/* Progress bar */}
-        <div className="w-full h-1.5 bg-[var(--report-surface-3)] rounded-full overflow-hidden mb-4">
+        <div className="w-full h-1 bg-secondary rounded-full overflow-hidden mb-4">
           <div
-            className="h-full bg-[var(--report-accent)] rounded-full transition-all duration-1000"
+            className="h-full bg-foreground rounded-full transition-all duration-1000"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        <p className="text-[13px] text-[var(--report-text-secondary)] text-center animate-pulse">
+        <p className="text-xs text-muted-foreground text-center transition-opacity duration-300">
           {STATUS_MESSAGES[messageIndex]}
         </p>
       </div>

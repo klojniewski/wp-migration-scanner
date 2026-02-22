@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, Globe } from "lucide-react";
 
 interface UrlInputFormProps {
   onSubmit: (url: string) => void;
@@ -9,6 +10,7 @@ interface UrlInputFormProps {
 
 export function UrlInputForm({ onSubmit, disabled }: UrlInputFormProps) {
   const [url, setUrl] = useState("");
+  const [focused, setFocused] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,47 +21,58 @@ export function UrlInputForm({ onSubmit, disabled }: UrlInputFormProps) {
   }
 
   return (
-    <div className="w-full max-w-xl">
-      <div className="text-center mb-10">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="w-8 h-8 bg-[var(--report-accent)] rounded-[6px] flex items-center justify-center text-[14px] font-bold text-white">
+    <div className="w-full max-w-lg">
+      <div className="text-center mb-12">
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <div className="w-8 h-8 bg-[var(--report-accent)] rounded-md flex items-center justify-center text-sm font-bold text-foreground">
             P
           </div>
-          <span className="text-[14px] font-semibold tracking-[0.06em] uppercase text-[var(--report-text-secondary)]">
+          <span className="text-sm font-medium text-muted-foreground tracking-wide">
             WordPress Migration Scanner
           </span>
         </div>
-        <h1 className="text-[32px] font-bold tracking-[-0.03em] text-[var(--report-text)] mb-3">
+        <h1 className="text-4xl font-semibold tracking-tight text-foreground mb-3 text-balance">
           Scan any WordPress site
         </h1>
-        <p className="text-[15px] text-[var(--report-text-secondary)] max-w-md mx-auto leading-relaxed">
-          Discover content types, taxonomies, plugins, and URL structure before your migration.
+        <p className="text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
+          Discover content types, taxonomies, plugins, and URL structure before
+          your migration.
         </p>
       </div>
 
-      <div className="bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] p-6">
-        <form onSubmit={handleSubmit} className="flex gap-3">
+      <form onSubmit={handleSubmit}>
+        <div
+          className={`flex items-center gap-3 h-12 px-4 rounded-lg border bg-card transition-all ${
+            focused
+              ? "border-foreground/30 ring-1 ring-foreground/10"
+              : "border-border hover:border-foreground/20"
+          }`}
+        >
+          <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="text"
             placeholder="example.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             autoFocus
             disabled={disabled}
-            className="flex-1 h-11 px-4 rounded-lg bg-[var(--report-surface-2)] border border-[var(--border)] text-[var(--report-text)] placeholder:text-[var(--report-text-muted)] text-[15px] outline-none transition-all focus:border-[var(--report-accent)] focus:ring-2 focus:ring-[var(--report-accent-dim)] disabled:opacity-50 font-sans"
+            className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm outline-none disabled:opacity-50 font-sans"
           />
           <button
             type="submit"
             disabled={disabled || !url.trim()}
-            className="h-11 px-6 rounded-lg bg-[var(--report-accent)] text-white text-[14px] font-semibold transition-all hover:bg-[#d12e31] hover:shadow-[0_4px_20px_var(--report-accent-glow)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="shrink-0 h-8 px-4 rounded-md bg-foreground text-background text-sm font-medium transition-all hover:bg-foreground/90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
           >
             Scan
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
 
-      <p className="text-center text-[12px] text-[var(--report-text-muted)] mt-4">
-        No credentials required — scans only publicly accessible data.
+      <p className="text-center text-xs text-muted-foreground/60 mt-4">
+        No credentials required - scans only publicly accessible data.
       </p>
     </div>
   );

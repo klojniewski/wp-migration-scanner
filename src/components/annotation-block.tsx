@@ -1,15 +1,19 @@
 "use client";
 
 import type { Annotation, AnnotationSeverity } from "@/types";
+import { Info, AlertTriangle, AlertCircle } from "lucide-react";
 
 interface AnnotationBlockProps {
   annotations: Annotation[];
 }
 
-const SEVERITY_BORDER: Record<AnnotationSeverity, string> = {
-  info: "var(--report-blue)",
-  warning: "var(--report-yellow)",
-  critical: "var(--report-red)",
+const SEVERITY_CONFIG: Record<
+  AnnotationSeverity,
+  { border: string; Icon: typeof Info }
+> = {
+  info: { border: "var(--report-blue)", Icon: Info },
+  warning: { border: "var(--report-yellow)", Icon: AlertTriangle },
+  critical: { border: "var(--report-red)", Icon: AlertCircle },
 };
 
 export function AnnotationBlock({ annotations }: AnnotationBlockProps) {
@@ -17,20 +21,29 @@ export function AnnotationBlock({ annotations }: AnnotationBlockProps) {
 
   return (
     <div className="flex flex-col gap-2 mt-4">
-      {annotations.map((annotation, i) => (
-        <div
-          key={i}
-          className="flex gap-2.5 py-3 px-4 bg-[var(--report-surface-2)] rounded-r-[var(--radius-sm)] text-[13px] text-[var(--report-text-secondary)] leading-relaxed"
-          style={{ borderLeft: `3px solid ${SEVERITY_BORDER[annotation.severity]}` }}
-        >
-          <span className="shrink-0 text-[14px] mt-px">💡</span>
-          <div>
-            <strong className="text-[var(--report-text)]">{annotation.title}</strong>
-            {" — "}
-            {annotation.body}
+      {annotations.map((annotation, i) => {
+        const config = SEVERITY_CONFIG[annotation.severity];
+        const Icon = config.Icon;
+        return (
+          <div
+            key={i}
+            className="flex gap-2.5 py-3 px-4 bg-card rounded-md text-sm text-muted-foreground leading-relaxed"
+            style={{ borderLeft: `2px solid ${config.border}` }}
+          >
+            <Icon
+              className="w-4 h-4 shrink-0 mt-0.5"
+              style={{ color: config.border }}
+            />
+            <div>
+              <span className="text-foreground font-medium">
+                {annotation.title}
+              </span>
+              {" - "}
+              {annotation.body}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

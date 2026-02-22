@@ -28,7 +28,9 @@ const FLAG_MAP: Record<string, string> = {
   pl: "\u{1F1F5}\u{1F1F1}",
 };
 
-function buildMatrix(data: ScanResult): { languages: string[]; rows: LanguageRow[] } {
+function buildMatrix(
+  data: ScanResult
+): { languages: string[]; rows: LanguageRow[] } {
   const ml = data.urlStructure?.multilingual;
   if (!ml) return { languages: [], rows: [] };
 
@@ -36,24 +38,23 @@ function buildMatrix(data: ScanResult): { languages: string[]; rows: LanguageRow
   const patterns = data.urlStructure!.patterns;
   const nonEnLangs = languages.filter((l) => l !== "en");
 
-  // Group patterns by content area
   const areaMap = new Map<string, Map<string, number>>();
 
   for (const p of patterns) {
-    // Check if this is a language-prefixed pattern
     const langMatch = nonEnLangs.find(
-      (lang) => p.pattern.startsWith(`/${lang}/`) || p.pattern === `/${lang}/{slug}/`
+      (lang) =>
+        p.pattern.startsWith(`/${lang}/`) || p.pattern === `/${lang}/{slug}/`
     );
 
     if (langMatch) {
-      // This is a translated pattern — extract the base area
-      const basePart = p.pattern.replace(`/${langMatch}/`, "/").replace(/\{[^}]+\}/g, "*");
+      const basePart = p.pattern
+        .replace(`/${langMatch}/`, "/")
+        .replace(/\{[^}]+\}/g, "*");
       const areaName = inferAreaName(basePart, p.pattern);
       const counts = areaMap.get(areaName) ?? new Map<string, number>();
       counts.set(langMatch, (counts.get(langMatch) ?? 0) + p.count);
       areaMap.set(areaName, counts);
     } else {
-      // English pattern
       const areaName = inferAreaName(p.pattern, p.pattern);
       const counts = areaMap.get(areaName) ?? new Map<string, number>();
       counts.set("en", (counts.get("en") ?? 0) + p.count);
@@ -73,7 +74,6 @@ function buildMatrix(data: ScanResult): { languages: string[]; rows: LanguageRow
 }
 
 function inferAreaName(basePart: string, original: string): string {
-  // Simple heuristic: use the first path segment
   if (basePart === "/*/" || basePart === "/{page}/") return "Pages & Blog";
   const segments = basePart.split("/").filter(Boolean);
   if (segments.length === 0) return "Pages & Blog";
@@ -81,7 +81,6 @@ function inferAreaName(basePart: string, original: string): string {
   const first = segments[0].replace(/\*/g, "").replace(/\{[^}]+\}/g, "");
   if (!first) return "Pages & Blog";
 
-  // Check for nested patterns like /{lang}/blog/{slug}/
   if (original.includes("/blog/")) return "Blog (nested)";
 
   return first
@@ -100,30 +99,32 @@ export function MultilingualMatrix({ data }: MultilingualMatrixProps) {
   )?.name;
 
   return (
-    <section className="py-10 border-b border-[var(--border)]">
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--report-accent)]">
+    <section className="py-8 border-b border-border">
+      <div className="flex items-baseline justify-between mb-1.5">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Multilingual Coverage
-        </span>
-        <span className="text-[12px] text-[var(--report-text-muted)] font-mono">
-          {languages.length} languages{pluginName ? ` · ${pluginName} detected` : ""}
+        </h2>
+        <span className="text-xs text-muted-foreground font-mono">
+          {languages.length} languages
+          {pluginName ? ` · ${pluginName} detected` : ""}
         </span>
       </div>
-      <p className="text-[14px] text-[var(--report-text-secondary)] mb-6 max-w-[680px]">
-        Estimated content distribution per language based on URL structure analysis. Cells show URL count per language subdirectory.
+      <p className="text-sm text-muted-foreground mb-5 max-w-2xl">
+        Estimated content distribution per language based on URL structure
+        analysis. Cells show URL count per language subdirectory.
       </p>
 
       <div className="overflow-x-auto">
-        <table className="w-full border-separate border-spacing-0 bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] overflow-hidden">
+        <table className="w-full border-separate border-spacing-0 border border-border rounded-lg overflow-hidden">
           <thead>
             <tr>
-              <th className="text-left py-2.5 px-3.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--report-text-muted)] bg-[var(--report-surface-2)] border-b border-[var(--border)]">
+              <th className="text-left py-2.5 px-3.5 text-xs font-medium text-muted-foreground bg-secondary border-b border-border">
                 Content Area
               </th>
               {languages.map((lang) => (
                 <th
                   key={lang}
-                  className="text-center py-2.5 px-3.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--report-text-muted)] bg-[var(--report-surface-2)] border-b border-[var(--border)]"
+                  className="text-center py-2.5 px-3.5 text-xs font-medium text-muted-foreground bg-secondary border-b border-border"
                 >
                   {FLAG_MAP[lang] ?? ""} {lang.toUpperCase()}
                 </th>
@@ -132,9 +133,14 @@ export function MultilingualMatrix({ data }: MultilingualMatrixProps) {
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={row.area} className="hover:bg-[var(--report-surface-2)]">
+              <tr
+                key={row.area}
+                className="hover:bg-secondary/50 transition-colors"
+              >
                 <td
-                  className={`text-left py-2.5 px-3.5 font-medium text-[var(--report-text)] ${i < rows.length - 1 ? "border-b border-[var(--border)]" : ""}`}
+                  className={`text-left py-2.5 px-3.5 font-medium text-sm text-foreground ${
+                    i < rows.length - 1 ? "border-b border-border" : ""
+                  }`}
                 >
                   {row.area}
                 </td>
@@ -144,13 +150,15 @@ export function MultilingualMatrix({ data }: MultilingualMatrixProps) {
                     ? count > 100
                       ? "text-[var(--report-green)]"
                       : "text-[var(--report-yellow)]"
-                    : "text-[var(--report-text-muted)]";
+                    : "text-muted-foreground";
                   return (
                     <td
                       key={lang}
-                      className={`text-center py-2.5 px-3.5 font-mono text-[13px] ${colorClass} ${i < rows.length - 1 ? "border-b border-[var(--border)]" : ""}`}
+                      className={`text-center py-2.5 px-3.5 font-mono text-sm ${colorClass} ${
+                        i < rows.length - 1 ? "border-b border-border" : ""
+                      }`}
                     >
-                      {count ? count : "—"}
+                      {count ? count : "-"}
                     </td>
                   );
                 })}

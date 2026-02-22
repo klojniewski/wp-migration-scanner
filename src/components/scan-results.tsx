@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { ArrowLeft } from "lucide-react";
 import type { ScanResult, Annotation, AnnotationSection } from "@/types";
 import { generateAnnotations } from "@/lib/annotations";
 import { generateMigrationScope } from "@/lib/migration-scope";
@@ -24,7 +25,10 @@ interface ScanResultsProps {
   onReset: () => void;
 }
 
-function filterBySection(annotations: Annotation[], section: AnnotationSection): Annotation[] {
+function filterBySection(
+  annotations: Annotation[],
+  section: AnnotationSection
+): Annotation[] {
   return annotations.filter((a) => a.section === section);
 }
 
@@ -35,60 +39,64 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
   return (
     <div className="min-h-screen">
       <div className="max-w-[960px] mx-auto px-6">
-          <ReportHeader data={data} />
-          <FallbackNotice data={data} />
-          <StatsRow data={data} />
-          <MigrationScopeCard scope={scope} />
+        <ReportHeader data={data} />
+        <FallbackNotice data={data} />
+        <StatsRow data={data} />
+        <MigrationScopeCard scope={scope} />
 
-          {/* Content Structure + annotations */}
-          <ContentTypesTable contentTypes={data.contentTypes} />
-          <AnnotationBlock annotations={filterBySection(annotations, "content-types")} />
+        <ContentTypesTable contentTypes={data.contentTypes} />
+        <AnnotationBlock
+          annotations={filterBySection(annotations, "content-types")}
+        />
 
-          {/* Content Relationships Diagram */}
-          <ContentRelationshipsCard contentTypes={data.contentTypes} />
+        <ContentRelationshipsCard contentTypes={data.contentTypes} />
 
-          {/* Multilingual Matrix + annotations (conditional) */}
-          {data.urlStructure?.multilingual && (
-            <>
-              <MultilingualMatrix data={data} />
-              <AnnotationBlock annotations={filterBySection(annotations, "multilingual")} />
-            </>
-          )}
+        {data.urlStructure?.multilingual && (
+          <>
+            <MultilingualMatrix data={data} />
+            <AnnotationBlock
+              annotations={filterBySection(annotations, "multilingual")}
+            />
+          </>
+        )}
 
-          {/* Detected Plugins + annotations */}
-          {data.detectedPlugins && data.detectedPlugins.plugins.length > 0 && (
-            <>
-              <DetectedPluginsCard pluginScanResult={data.detectedPlugins} />
-              <AnnotationBlock annotations={filterBySection(annotations, "plugins")} />
-            </>
-          )}
+        {data.detectedPlugins && data.detectedPlugins.plugins.length > 0 && (
+          <>
+            <DetectedPluginsCard pluginScanResult={data.detectedPlugins} />
+            <AnnotationBlock
+              annotations={filterBySection(annotations, "plugins")}
+            />
+          </>
+        )}
 
-          {/* URL Structure + annotations */}
-          {data.urlStructure && (
-            <>
-              <UrlStructureCard urlStructure={data.urlStructure} />
-              <AnnotationBlock annotations={filterBySection(annotations, "url-structure")} />
-            </>
-          )}
+        {data.urlStructure && (
+          <>
+            <UrlStructureCard urlStructure={data.urlStructure} />
+            <AnnotationBlock
+              annotations={filterBySection(annotations, "url-structure")}
+            />
+          </>
+        )}
 
-          {/* Warnings + annotations */}
-          <ScanWarnings errors={data.errors} />
-          <AnnotationBlock annotations={filterBySection(annotations, "warnings")} />
+        <ScanWarnings errors={data.errors} />
+        <AnnotationBlock
+          annotations={filterBySection(annotations, "warnings")}
+        />
 
-          <ScanLimitations />
-          <ReportCTA />
+        <ScanLimitations />
+        <ReportCTA />
 
-          {/* Scan Another Site link */}
-          <div className="pb-4 text-center">
-            <button
-              onClick={onReset}
-              className="text-[13px] text-[var(--report-text-muted)] hover:text-[var(--report-accent)] transition-colors underline underline-offset-4 cursor-pointer bg-transparent border-none"
-            >
-              ← Scan Another Site
-            </button>
-          </div>
+        <div className="pb-4 text-center">
+          <button
+            onClick={onReset}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-none"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Scan Another Site
+          </button>
+        </div>
 
-          <ReportFooter scannedAt={data.scannedAt} />
+        <ReportFooter scannedAt={data.scannedAt} />
       </div>
     </div>
   );

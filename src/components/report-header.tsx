@@ -1,26 +1,25 @@
 "use client";
 
 import type { ScanResult } from "@/types";
+import { ExternalLink } from "lucide-react";
 
 interface ReportHeaderProps {
   data: ScanResult;
 }
 
 function getBadges(data: ScanResult) {
-  const badges: { label: string; color: string }[] = [];
+  const badges: { label: string; variant: "default" | "warning" | "success" | "destructive" | "info" }[] = [];
 
   badges.push({
     label: data.apiAvailable ? "REST API Open" : "Fallback Mode",
-    color: data.apiAvailable ? "green" : "yellow",
+    variant: data.apiAvailable ? "success" : "warning",
   });
 
-  // Page builder badge
   const builder = data.contentTypes.find((ct) => ct.complexity?.builder);
   if (builder?.complexity?.builder) {
-    badges.push({ label: builder.complexity.builder, color: "red" });
+    badges.push({ label: builder.complexity.builder, variant: "destructive" });
   }
 
-  // Multilingual badge
   if (data.urlStructure?.multilingual) {
     const ml = data.urlStructure.multilingual;
     const pluginName = data.detectedPlugins?.plugins.find(
@@ -29,33 +28,30 @@ function getBadges(data: ScanResult) {
     const label = pluginName
       ? `${pluginName} · ${ml.languages.length} Languages`
       : `${ml.languages.length} Languages`;
-    badges.push({ label, color: "purple" });
+    badges.push({ label, variant: "info" });
   }
 
-  // SEO plugin badge
   const seo = data.detectedPlugins?.plugins.find((p) => p.category === "seo");
   if (seo) {
-    badges.push({ label: seo.name, color: "blue" });
+    badges.push({ label: seo.name, variant: "default" });
   }
 
-  // Plugin count badge
   if (data.detectedPlugins && data.detectedPlugins.totalDetected > 5) {
     badges.push({
       label: `${data.detectedPlugins.totalDetected} Plugins`,
-      color: "yellow",
+      variant: "warning",
     });
   }
 
   return badges;
 }
 
-const BADGE_COLORS: Record<string, string> = {
-  green: "bg-[var(--report-green-dim)] text-[var(--report-green)]",
-  red: "bg-[var(--report-red-dim)] text-[var(--report-red)]",
-  blue: "bg-[var(--report-blue-dim)] text-[var(--report-blue)]",
-  yellow: "bg-[var(--report-yellow-dim)] text-[var(--report-yellow)]",
-  purple: "bg-[var(--report-purple-dim)] text-[var(--report-purple)]",
-  orange: "bg-[var(--report-orange-dim)] text-[var(--report-orange)]",
+const BADGE_STYLES: Record<string, string> = {
+  default: "bg-secondary text-secondary-foreground",
+  success: "bg-[var(--report-green-dim)] text-[var(--report-green)]",
+  warning: "bg-[var(--report-yellow-dim)] text-[var(--report-yellow)]",
+  destructive: "bg-[var(--report-red-dim)] text-[var(--report-red)]",
+  info: "bg-[var(--report-blue-dim)] text-[var(--report-blue)]",
 };
 
 export function ReportHeader({ data }: ReportHeaderProps) {
@@ -75,33 +71,41 @@ export function ReportHeader({ data }: ReportHeaderProps) {
   const badges = getBadges(data);
 
   return (
-    <header className="pt-10 pb-0 border-b border-[var(--border)]">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2 text-[13px] font-semibold tracking-[0.08em] uppercase text-[var(--report-text-secondary)]">
-          <div className="w-6 h-6 bg-[var(--report-accent)] rounded-[5px] flex items-center justify-center text-[12px] font-bold text-white">
+    <header className="pt-10 pb-6 border-b border-border">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 bg-[var(--report-accent)] rounded-[5px] flex items-center justify-center text-xs font-bold text-foreground">
             P
           </div>
-          WordPress Migration Scanner
+          <span className="text-sm font-medium text-muted-foreground">
+            WordPress Migration Scanner
+          </span>
         </div>
-        <div className="text-[12px] text-[var(--report-text-muted)] font-mono">
-          Scanned {dateStr} · {timeStr}
-        </div>
+        <span className="text-xs text-muted-foreground font-mono">
+          {dateStr} · {timeStr}
+        </span>
       </div>
-      <div className="text-[28px] font-bold text-[var(--report-text)] mb-1.5 tracking-[-0.02em]">
+
+      <div className="flex items-center gap-2 mb-2">
+        <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+          {displayUrl}
+        </h1>
         <a
           href={data.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-inherit no-underline hover:text-[var(--report-accent)] transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors"
         >
-          {displayUrl}
+          <ExternalLink className="w-4 h-4" />
+          <span className="sr-only">Open site in new tab</span>
         </a>
       </div>
-      <div className="flex gap-2 flex-wrap mb-7">
+
+      <div className="flex gap-2 flex-wrap mt-3">
         {badges.map((badge, i) => (
           <span
             key={i}
-            className={`text-[12px] font-medium px-2.5 py-1 rounded-full font-mono ${BADGE_COLORS[badge.color] ?? ""}`}
+            className={`text-xs font-medium px-2.5 py-1 rounded-md font-mono ${BADGE_STYLES[badge.variant] ?? BADGE_STYLES.default}`}
           >
             {badge.label}
           </span>

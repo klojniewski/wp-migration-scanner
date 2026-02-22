@@ -13,20 +13,20 @@ export function ReportFooter({ scannedAt }: ReportFooterProps) {
   });
 
   return (
-    <footer className="py-6 border-t border-[var(--border)] flex justify-between items-center text-[12px] text-[var(--report-text-muted)]">
+    <footer className="py-6 border-t border-border flex justify-between items-center text-xs text-muted-foreground">
       <span>
         WordPress Migration Scanner by{" "}
         <a
           href="https://pagepro.co"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[var(--report-text-secondary)] no-underline hover:text-[var(--report-accent)] transition-colors"
+          className="text-foreground/70 no-underline hover:text-foreground transition-colors"
         >
           Pagepro
         </a>
-        {" — Next.js & Sanity Migration Experts"}
+        {" - Next.js & Sanity Migration Experts"}
       </span>
-      <span>Report generated {dateStr}</span>
+      <span className="font-mono">Report generated {dateStr}</span>
     </footer>
   );
 }
