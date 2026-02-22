@@ -99,6 +99,17 @@ export function generateMigrationScope(data: ScanResult): MigrationScope {
     });
   }
 
+  // Third-party integration complexity
+  const integrationCount = data.detectedIntegrations?.totalDetected ?? 0;
+  if (integrationCount >= 5) {
+    considerations.push({
+      icon: "⬡",
+      color: "orange",
+      title: "Third-party integration complexity",
+      body: `${integrationCount} third-party integrations detected (analytics, chat, marketing, etc.). Each requires equivalent setup in the target platform — plan as a distinct migration workstream.`,
+    });
+  }
+
   // Scale note for large content
   if (totalItems > 1000) {
     considerations.push({

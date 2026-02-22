@@ -1,5 +1,5 @@
 import { scan } from "./scanner";
-import type { PluginCategory, ScanResult } from "./types";
+import type { IntegrationCategory, PluginCategory, ScanResult } from "./types";
 
 export function padDots(label: string, count: string, width = 40): string {
   const dots = ".".repeat(Math.max(2, width - label.length - count.length));
@@ -120,6 +120,41 @@ export function formatReport(result: ScanResult): string {
     lines.push("");
     lines.push("─".repeat(45));
     lines.push(`${result.detectedPlugins.totalDetected} plugins detected`);
+  }
+
+  // Third-Party Integrations section
+  if (result.detectedIntegrations && result.detectedIntegrations.integrations.length > 0) {
+    lines.push("");
+    lines.push("Third-Party Integrations");
+    lines.push("═".repeat(45));
+    lines.push("");
+
+    const integrationLabels: Record<IntegrationCategory, string> = {
+      analytics: "Analytics",
+      "tag-manager": "Tag Manager",
+      chat: "Chat",
+      heatmap: "Heatmap / A-B Testing",
+      marketing: "Marketing",
+      "form-embed": "Form Embed",
+      scheduling: "Scheduling",
+      "cookie-consent": "Cookie Consent",
+      other: "Other",
+    };
+
+    const iGroups = new Map<IntegrationCategory, string[]>();
+    for (const i of result.detectedIntegrations.integrations) {
+      const list = iGroups.get(i.category) || [];
+      list.push(i.name);
+      iGroups.set(i.category, list);
+    }
+
+    for (const [cat, names] of iGroups) {
+      lines.push(`  ${integrationLabels[cat]}: ${names.join(", ")}`);
+    }
+
+    lines.push("");
+    lines.push("─".repeat(45));
+    lines.push(`${result.detectedIntegrations.totalDetected} integrations detected`);
   }
 
   if (result.errors.length > 0) {

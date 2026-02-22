@@ -210,19 +210,19 @@ export function parsePluginSignatures(html: string): PluginScanResult {
   return { plugins, totalDetected: plugins.length };
 }
 
-/** Fetch wrapper — fetches homepage HTML and runs plugin detection */
-export async function fetchPlugins(
+/** Fetch homepage HTML — shared between plugin and integration detection */
+export async function fetchHomepageHtml(
   baseUrl: string,
   fetcher: Fetcher = globalThis.fetch,
-): Promise<PluginScanResult> {
-  const res = await fetcher(baseUrl, {
-    headers: DEFAULT_HEADERS,
-    signal: AbortSignal.timeout(15_000),
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} fetching homepage`);
+): Promise<string | null> {
+  try {
+    const res = await fetcher(baseUrl, {
+      headers: DEFAULT_HEADERS,
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
   }
-
-  return parsePluginSignatures(await res.text());
 }

@@ -1,4 +1,4 @@
-import type { ContentType, PluginScanResult, ScanResult, TaxonomyRef, UrlStructure } from "../types";
+import type { ContentType, IntegrationScanResult, PluginScanResult, ScanResult, TaxonomyRef, UrlStructure } from "../types";
 import { type Fetcher, DEFAULT_HEADERS } from "./http";
 import { probeApi, scanViaApi } from "./wp-api";
 import { fetchSitemap } from "./sitemap";
@@ -6,7 +6,8 @@ import type { SitemapGroup } from "./sitemap";
 import { fetchRss } from "./rss";
 import type { RssItem } from "./rss";
 import { analyzeUrls } from "./urls";
-import { fetchPlugins } from "./plugins";
+import { fetchHomepageHtml, parsePluginSignatures } from "./plugins";
+import { parseIntegrations } from "./integrations";
 import { titleCase, toErrorMessage } from "./utils";
 
 async function resolveRedirects(
@@ -99,18 +100,27 @@ export async function scan(
 
   const errors: string[] = [];
 
-  // 1. Probe REST API + fetch sitemap + detect plugins in parallel
-  const [apiAvailable, sitemapResult, pluginResult] = await Promise.all([
+  // 1. Probe REST API + fetch sitemap + fetch homepage HTML in parallel
+  const [apiAvailable, sitemapResult, homepageHtml] = await Promise.all([
     probeApi(baseUrl, fetcher),
     fetchSitemap(baseUrl, fetcher).catch((err) => {
       errors.push(`Sitemap parse error: ${toErrorMessage(err)}`);
       return { groups: [], allUrls: [] as string[] };
     }),
-    fetchPlugins(baseUrl, fetcher).catch((err) => {
-      errors.push(`Plugin detection error: ${toErrorMessage(err)}`);
-      return null as PluginScanResult | null;
-    }),
+    fetchHomepageHtml(baseUrl, fetcher),
   ]);
+
+  // Run both parsers on the shared homepage HTML
+  let pluginResult: PluginScanResult | null = null;
+  let integrationResult: IntegrationScanResult | null = null;
+  if (homepageHtml) {
+    try { pluginResult = parsePluginSignatures(homepageHtml); } catch (err) {
+      errors.push(`Plugin detection error: ${toErrorMessage(err)}`);
+    }
+    try { integrationResult = parseIntegrations(homepageHtml); } catch (err) {
+      errors.push(`Integration detection error: ${toErrorMessage(err)}`);
+    }
+  }
 
   // Build URL structure from sitemap data
   let urlStructure: UrlStructure | null = null;
@@ -129,6 +139,7 @@ export async function scan(
         contentTypes: apiResult.contentTypes,
         urlStructure,
         detectedPlugins: pluginResult,
+        detectedIntegrations: integrationResult,
         errors: [...apiResult.errors, ...errors],
       };
     } catch (err) {
@@ -152,6 +163,7 @@ export async function scan(
     contentTypes,
     urlStructure,
     detectedPlugins: pluginResult,
+    detectedIntegrations: integrationResult,
     errors,
   };
 }

@@ -62,6 +62,28 @@ export interface PluginScanResult {
   totalDetected: number;
 }
 
+export type IntegrationCategory =
+  | "analytics"
+  | "tag-manager"
+  | "chat"
+  | "heatmap"
+  | "marketing"
+  | "form-embed"
+  | "scheduling"
+  | "cookie-consent"
+  | "other";
+
+export interface DetectedIntegration {
+  slug: string;
+  name: string;
+  category: IntegrationCategory;
+}
+
+export interface IntegrationScanResult {
+  integrations: DetectedIntegration[];
+  totalDetected: number;
+}
+
 export interface ScanResult {
   url: string;
   scannedAt: string;
@@ -69,12 +91,13 @@ export interface ScanResult {
   contentTypes: ContentType[];
   urlStructure: UrlStructure | null;
   detectedPlugins: PluginScanResult | null;
+  detectedIntegrations: IntegrationScanResult | null;
   errors: string[];
 }
 
 export type AnnotationSeverity = "info" | "warning" | "critical";
 
-export type AnnotationSection = "content-types" | "plugins" | "url-structure" | "warnings" | "multilingual";
+export type AnnotationSection = "content-types" | "plugins" | "url-structure" | "warnings" | "multilingual" | "integrations";
 
 export interface Annotation {
   title: string;

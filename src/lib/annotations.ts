@@ -184,6 +184,72 @@ function flatStructureReview(data: ScanResult): Annotation | null {
   };
 }
 
+/** Rule 11: GTM detected → dynamic loading warning */
+function gtmDynamicLoading(data: ScanResult): Annotation | null {
+  const hasGtm = data.detectedIntegrations?.integrations.some(
+    (i) => i.slug === "google-tag-manager"
+  );
+  if (!hasGtm) return null;
+
+  return {
+    title: "Google Tag Manager detected",
+    body: `Additional analytics and tracking services may be loaded dynamically via GTM and are not visible in static HTML analysis. Request GTM container export for complete integration inventory.`,
+    severity: "info",
+    section: "integrations",
+  };
+}
+
+/** Rule 12: 5+ integrations → migration complexity note */
+function highIntegrationCount(data: ScanResult): Annotation | null {
+  if (!data.detectedIntegrations) return null;
+  if (data.detectedIntegrations.totalDetected < 5) return null;
+
+  const count = data.detectedIntegrations.totalDetected;
+
+  return {
+    title: `${count} third-party integrations detected`,
+    body: `Each integration requires equivalent implementation or replacement in the target platform. Plan integration setup as a distinct migration workstream.`,
+    severity: "warning",
+    section: "integrations",
+  };
+}
+
+/** Rule 13: Multiple analytics tools → consolidation opportunity */
+function multipleAnalytics(data: ScanResult): Annotation | null {
+  if (!data.detectedIntegrations) return null;
+
+  const analyticsTools = data.detectedIntegrations.integrations.filter(
+    (i) => i.category === "analytics"
+  );
+  if (analyticsTools.length < 2) return null;
+
+  const names = analyticsTools.map((i) => i.name).join(", ");
+
+  return {
+    title: "Multiple analytics tools detected",
+    body: `${names} — consider consolidation during migration to reduce page weight and simplify tracking.`,
+    severity: "info",
+    section: "integrations",
+  };
+}
+
+/** Rule 14: Cookie consent detected → compliance note */
+function cookieConsentCompliance(data: ScanResult): Annotation | null {
+  if (!data.detectedIntegrations) return null;
+
+  const consentTool = data.detectedIntegrations.integrations.find(
+    (i) => i.category === "cookie-consent"
+  );
+  if (!consentTool) return null;
+
+  return {
+    title: `${consentTool.name} cookie consent detected`,
+    body: `GDPR/CCPA compliance configuration will need reimplementation. Export current consent categories and banner settings before migration.`,
+    severity: "warning",
+    section: "integrations",
+  };
+}
+
 const rules: AnnotationRule[] = [
   builderContentExtraction,
   complexTaxonomySchema,
@@ -195,6 +261,10 @@ const rules: AnnotationRule[] = [
   deadContent,
   redirectMapping,
   flatStructureReview,
+  gtmDynamicLoading,
+  highIntegrationCount,
+  multipleAnalytics,
+  cookieConsentCompliance,
 ];
 
 export function generateAnnotations(data: ScanResult): Annotation[] {

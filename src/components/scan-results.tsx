@@ -13,6 +13,7 @@ import { ContentRelationshipsCard } from "@/components/content-relationships-car
 import { AnnotationBlock } from "@/components/annotation-block";
 import { MultilingualMatrix } from "@/components/multilingual-matrix";
 import { DetectedPluginsCard } from "@/components/detected-plugins-card";
+import { DetectedIntegrationsCard } from "@/components/detected-integrations-card";
 import { UrlStructureCard } from "@/components/url-structure-card";
 import { ScanWarnings } from "@/components/scan-warnings";
 import { ScanLimitations } from "@/components/scan-limitations";
@@ -60,6 +61,14 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
             <>
               <DetectedPluginsCard pluginScanResult={data.detectedPlugins} />
               <AnnotationBlock annotations={filterBySection(annotations, "plugins")} />
+            </>
+          )}
+
+          {/* Third-Party Integrations + annotations */}
+          {data.detectedIntegrations && data.detectedIntegrations.integrations.length > 0 && (
+            <>
+              <DetectedIntegrationsCard integrationScanResult={data.detectedIntegrations} />
+              <AnnotationBlock annotations={filterBySection(annotations, "integrations")} />
             </>
           )}
 
