@@ -5,6 +5,7 @@ import type { ScanResult, Annotation, AnnotationSection } from "@/types";
 import { generateAnnotations } from "@/lib/annotations";
 import { generateMigrationScope } from "@/lib/migration-scope";
 import { ReportHeader } from "@/components/report-header";
+import { FallbackNotice } from "@/components/fallback-notice";
 import { StatsRow } from "@/components/stats-row";
 import { MigrationScopeCard } from "@/components/migration-scope-card";
 import { ContentTypesTable } from "@/components/content-types-table";
@@ -35,6 +36,7 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
     <div className="min-h-screen">
       <div className="max-w-[960px] mx-auto px-6">
           <ReportHeader data={data} />
+          <FallbackNotice data={data} />
           <StatsRow data={data} />
           <MigrationScopeCard scope={scope} />
 

@@ -62,6 +62,15 @@ export function ScannerPage() {
     }
   }, [searchParams, handleScan]);
 
+  useEffect(() => {
+    if (state.phase === "results") {
+      const domain = state.data.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      document.title = `${domain} — WordPress Migration Scanner`;
+    } else {
+      document.title = "WordPress Migration Scanner";
+    }
+  }, [state]);
+
   function handleReset() {
     setState({ phase: "idle" });
     setUrlParam(null);
