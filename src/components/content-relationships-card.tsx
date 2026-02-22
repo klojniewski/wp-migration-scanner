@@ -1,13 +1,6 @@
 "use client";
 
 import type { ContentType } from "@/types";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 interface TaxonomyNode {
   slug: string;
@@ -39,7 +32,6 @@ function buildTaxonomyNodes(contentTypes: ContentType[]): TaxonomyNode[] {
     }
   }
 
-  // Sort: shared first, then by term count descending
   return Array.from(map.values()).sort((a, b) => {
     const sharedDiff = b.usedBy.length - a.usedBy.length;
     if (sharedDiff !== 0) return sharedDiff;
@@ -69,7 +61,6 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
   const leftColH = leftCount * (NODE_H + NODE_GAP) - NODE_GAP;
   const rightColH = rightCount * (NODE_H + NODE_GAP) - NODE_GAP;
 
-  // Center the shorter column vertically
   const leftTop = PAD_TOP + Math.max(0, (rightColH - leftColH) / 2);
   const rightTop = PAD_TOP + Math.max(0, (leftColH - rightColH) / 2);
   const svgH = Math.max(leftColH, rightColH) + PAD_TOP * 2;
@@ -83,7 +74,6 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
   const shared = taxonomies.filter((t) => t.usedBy.length >= 2);
   const orphaned = taxonomies.filter((t) => t.count === 0);
 
-  // Build connection data
   const connections: {
     ctIdx: number;
     taxIdx: number;
@@ -101,34 +91,40 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Content Relationships</CardTitle>
-        <CardDescription>
-          How {contentTypes.length} content{" "}
-          {contentTypes.length === 1 ? "type connects" : "types connect"} through{" "}
-          {taxonomies.length}{" "}
-          {taxonomies.length === 1 ? "taxonomy" : "taxonomies"}
+    <section className="py-10 border-b border-[var(--border)]">
+      <div className="flex items-baseline justify-between mb-2">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--report-accent)]">
+          Content Relationships
+        </span>
+        <span className="text-[12px] text-[var(--report-text-muted)] font-mono">
+          {contentTypes.length} types · {taxonomies.length} taxonomies
           {shared.length > 0 && (
-            <span style={{ color: "var(--chart-1)" }}>
+            <span className="text-[var(--report-blue)]">
               {" "}&middot; {shared.length} shared
             </span>
           )}
           {orphaned.length > 0 && (
-            <span style={{ color: "var(--destructive)" }}>
+            <span className="text-[var(--report-red)]">
               {" "}&middot; {orphaned.length} empty
             </span>
           )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </span>
+      </div>
+      <p className="text-[14px] text-[var(--report-text-secondary)] mb-6 max-w-[680px]">
+        How {contentTypes.length} content{" "}
+        {contentTypes.length === 1 ? "type connects" : "types connect"} through{" "}
+        {taxonomies.length}{" "}
+        {taxonomies.length === 1 ? "taxonomy" : "taxonomies"}.
+      </p>
+
+      <div className="bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] p-4 overflow-x-auto">
         <svg
           viewBox={`0 0 ${SVG_W} ${svgH}`}
           className="w-full"
           role="img"
           aria-label="Content type and taxonomy relationship diagram"
         >
-          {/* Connections — render non-shared first so shared draw on top */}
+          {/* Connections */}
           {connections
             .sort((a, b) => Number(a.isShared) - Number(b.isShared))
             .map(({ ctIdx, taxIdx, isShared }) => {
@@ -143,11 +139,9 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   key={`c-${ctIdx}-${taxIdx}`}
                   d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
                   fill="none"
-                  style={{
-                    stroke: isShared ? "var(--chart-1)" : "var(--border)",
-                    strokeWidth: isShared ? 2 : 1.5,
-                    opacity: isShared ? 0.8 : 0.5,
-                  }}
+                  stroke={isShared ? "var(--report-blue)" : "var(--border)"}
+                  strokeWidth={isShared ? 2 : 1.5}
+                  opacity={isShared ? 0.8 : 0.4}
                 />
               );
             })}
@@ -163,11 +157,9 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   width={LEFT_W}
                   height={NODE_H}
                   rx={8}
-                  style={{
-                    fill: "var(--card)",
-                    stroke: "var(--border)",
-                    strokeWidth: 1.5,
-                  }}
+                  fill="var(--report-surface-2)"
+                  stroke="var(--border)"
+                  strokeWidth={1.5}
                 />
                 <text
                   x={14}
@@ -175,7 +167,8 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    fill: "var(--foreground)",
+                    fill: "var(--report-text)",
+                    fontFamily: "var(--font-sans)",
                   }}
                 >
                   {truncate(ct.name, 20)}
@@ -185,7 +178,8 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   y={y + 40}
                   style={{
                     fontSize: 11,
-                    fill: "var(--muted-foreground)",
+                    fill: "var(--report-text-muted)",
+                    fontFamily: "var(--font-mono)",
                   }}
                 >
                   {ct.count.toLocaleString()} items
@@ -208,16 +202,16 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   width={RIGHT_W}
                   height={NODE_H}
                   rx={8}
-                  style={{
-                    fill: isShared ? "color-mix(in oklch, var(--chart-1) 10%, var(--card))" : "var(--card)",
-                    stroke: isOrphaned
-                      ? "var(--destructive)"
+                  fill={isShared ? "var(--report-blue-dim)" : "var(--report-surface-2)"}
+                  stroke={
+                    isOrphaned
+                      ? "var(--report-red)"
                       : isShared
-                        ? "var(--chart-1)"
-                        : "var(--border)",
-                    strokeWidth: isShared ? 2 : 1.5,
-                    strokeDasharray: isOrphaned ? "5 3" : "none",
-                  }}
+                        ? "var(--report-blue)"
+                        : "var(--border)"
+                  }
+                  strokeWidth={isShared ? 2 : 1.5}
+                  strokeDasharray={isOrphaned ? "5 3" : "none"}
                 />
                 <text
                   x={RIGHT_X + 14}
@@ -225,7 +219,8 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   style={{
                     fontSize: 13,
                     fontWeight: isShared ? 600 : 400,
-                    fill: "var(--foreground)",
+                    fill: "var(--report-text)",
+                    fontFamily: "var(--font-sans)",
                   }}
                 >
                   {truncate(tax.name, 18)}
@@ -235,7 +230,8 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   y={y + 40}
                   style={{
                     fontSize: 11,
-                    fill: "var(--muted-foreground)",
+                    fill: "var(--report-text-muted)",
+                    fontFamily: "var(--font-mono)",
                   }}
                 >
                   {tax.count} {tax.count === 1 ? "term" : "terms"} &middot;{" "}
@@ -245,32 +241,32 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
             );
           })}
         </svg>
+      </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-3 h-3 rounded-sm border-2"
-              style={{ borderColor: "var(--chart-1)", background: "color-mix(in oklch, var(--chart-1) 10%, var(--card))" }}
-            />
-            Shared taxonomy
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-3 h-3 rounded-sm border-2 border-dashed"
-              style={{ borderColor: "var(--destructive)" }}
-            />
-            Empty (0 terms)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-3 h-3 rounded-sm"
-              style={{ border: "1.5px solid var(--border)" }}
-            />
-            Exclusive to one type
-          </span>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[11px] text-[var(--report-text-muted)]">
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-3 h-3 rounded-sm border-2"
+            style={{ borderColor: "var(--report-blue)", background: "var(--report-blue-dim)" }}
+          />
+          Shared taxonomy
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-3 h-3 rounded-sm border-2 border-dashed"
+            style={{ borderColor: "var(--report-red)" }}
+          />
+          Empty (0 terms)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block w-3 h-3 rounded-sm"
+            style={{ border: "1.5px solid var(--border)" }}
+          />
+          Exclusive to one type
+        </span>
+      </div>
+    </section>
   );
 }

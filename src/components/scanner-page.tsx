@@ -6,8 +6,6 @@ import type { ScanResult } from "@/types";
 import { UrlInputForm } from "@/components/url-input-form";
 import { ScanProgress } from "@/components/scan-progress";
 import { ScanResults } from "@/components/scan-results";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 
 type State =
   | { phase: "idle" }
@@ -69,25 +67,45 @@ export function ScannerPage() {
     setUrlParam(null);
   }
 
+  if (state.phase === "results") {
+    return <ScanResults data={state.data} onReset={handleReset} />;
+  }
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
       {state.phase === "idle" && <UrlInputForm onSubmit={handleScan} />}
 
       {state.phase === "scanning" && <ScanProgress url={state.url} />}
 
-      {state.phase === "results" && (
-        <ScanResults data={state.data} onReset={handleReset} />
-      )}
-
       {state.phase === "error" && (
-        <div className="w-full max-w-xl space-y-4">
-          <Alert variant="destructive">
-            <AlertTitle>Scan Failed</AlertTitle>
-            <AlertDescription>{state.message}</AlertDescription>
-          </Alert>
-          <Button onClick={handleReset} variant="outline" className="w-full">
-            Try Again
-          </Button>
+        <div className="w-full max-w-xl">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="w-8 h-8 bg-[var(--report-accent)] rounded-[6px] flex items-center justify-center text-[14px] font-bold text-white">
+                P
+              </div>
+              <span className="text-[14px] font-semibold tracking-[0.06em] uppercase text-[var(--report-text-secondary)]">
+                WordPress Migration Scanner
+              </span>
+            </div>
+          </div>
+          <div className="bg-[var(--report-surface)] border border-[var(--report-red-dim)] rounded-[var(--radius)] p-8">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[var(--report-red)] text-lg">⚠</span>
+              <h2 className="text-[18px] font-semibold text-[var(--report-text)]">
+                Scan Failed
+              </h2>
+            </div>
+            <p className="text-[14px] text-[var(--report-text-secondary)] mb-6">
+              {state.message}
+            </p>
+            <button
+              onClick={handleReset}
+              className="w-full h-10 rounded-lg border border-[var(--border)] bg-[var(--report-surface-2)] text-[var(--report-text-secondary)] text-[14px] font-medium transition-all hover:bg-[var(--report-surface-3)] hover:text-[var(--report-text)] cursor-pointer"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       )}
     </main>

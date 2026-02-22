@@ -70,3 +70,26 @@ export interface ScanResult {
   detectedPlugins: PluginScanResult | null;
   errors: string[];
 }
+
+export type AnnotationSeverity = "info" | "warning" | "critical";
+
+export type AnnotationSection = "content-types" | "plugins" | "url-structure" | "warnings" | "multilingual";
+
+export interface Annotation {
+  title: string;
+  body: string;
+  severity: AnnotationSeverity;
+  section: AnnotationSection;
+}
+
+export interface MigrationConsideration {
+  icon: string;
+  color: "red" | "purple" | "orange" | "yellow" | "green" | "blue";
+  title: string;
+  body: string;
+}
+
+export interface MigrationScope {
+  headline: string;
+  considerations: MigrationConsideration[];
+}
