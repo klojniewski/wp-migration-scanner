@@ -259,6 +259,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
         <svg
           viewBox={`0 0 ${L.SVG_W} ${svgH}`}
           className="w-full"
+          style={fullscreen ? undefined : { maxWidth: L.SVG_W, margin: "0 auto" }}
           role="img"
           aria-label="Content type and taxonomy relationship diagram"
           onMouseLeave={() => { setHoverType(null); setHoverTax(null); }}
