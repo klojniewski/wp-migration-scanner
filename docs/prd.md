@@ -33,7 +33,7 @@
 **Web UI — Report**
 - Dark-themed, data-dense professional migration report design (DM Sans + JetBrains Mono)
 - Content types table with counts, taxonomies (clickable badges showing term names), sample titles, and complexity pill badges
-- Content relationships diagram (SVG bezier curves linking types to taxonomies, shared taxonomy highlighting, orphaned taxonomy detection)
+- Content relationships diagram (interactive SVG: hover/tap-to-highlight paths and connected nodes, per-type color palette, logarithmic line thickness, fullscreen mode with Escape-to-close, mobile-optimized with tap interactions)
 - URL structure card with patterns and multilingual info
 - Multilingual coverage matrix
 - Detected plugins grid with category grouping
@@ -49,7 +49,7 @@
 - URL input form with validation
 - Scan progress indicator
 - Shareable report URLs via `?url=` query parameter with auto-scan and "Copy report link" button
-- API route (`POST /api/scan`) with SSRF protection
+- API route (`GET /api/scan`) with SSRF protection and Vercel CDN edge caching (15-min TTL)
 
 **Infrastructure**
 - Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui
