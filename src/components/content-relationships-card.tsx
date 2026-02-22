@@ -45,24 +45,23 @@ function truncate(text: string, max: number): string {
 }
 
 function layoutFor(mode: "inline" | "full") {
-  const NODE_H = mode === "full" ? 44 : 32;
-  const NODE_GAP = mode === "full" ? 10 : 6;
-  const LEFT_W = mode === "full" ? 220 : 130;
-  const RIGHT_W = mode === "full" ? 220 : 130;
-  const SVG_W = mode === "full" ? 800 : 420;
+  const NODE_H = mode === "full" ? 28 : 22;
+  const NODE_GAP = mode === "full" ? 5 : 3;
+  const LEFT_W = mode === "full" ? 200 : 130;
+  const RIGHT_W = mode === "full" ? 180 : 120;
+  const SVG_W = mode === "full" ? 700 : 420;
   const RIGHT_X = SVG_W - RIGHT_W;
-  const PAD_TOP = mode === "full" ? 12 : 8;
-  const FONT_NAME = mode === "full" ? 11 : 10;
-  const FONT_SUB = mode === "full" ? 9 : 8;
-  const TEXT_X = mode === "full" ? 14 : 10;
-  const TEXT_Y1 = mode === "full" ? 18 : 14;
-  const TEXT_Y2 = mode === "full" ? 32 : 26;
-  const ACCENT_W = mode === "full" ? 4 : 3;
-  const ACCENT_PAD = mode === "full" ? 8 : 6;
-  const RX = mode === "full" ? 6 : 5;
-  const TRUNC_L = mode === "full" ? 22 : 14;
-  const TRUNC_R = mode === "full" ? 20 : 14;
-  return { NODE_H, NODE_GAP, LEFT_W, RIGHT_W, SVG_W, RIGHT_X, PAD_TOP, FONT_NAME, FONT_SUB, TEXT_X, TEXT_Y1, TEXT_Y2, ACCENT_W, ACCENT_PAD, RX, TRUNC_L, TRUNC_R };
+  const PAD_TOP = mode === "full" ? 10 : 6;
+  const FONT = mode === "full" ? 11 : 9;
+  const FONT_COUNT = mode === "full" ? 9 : 7.5;
+  const TEXT_X = mode === "full" ? 12 : 8;
+  const TEXT_Y = mode === "full" ? 18 : 15;
+  const ACCENT_W = mode === "full" ? 3 : 2;
+  const ACCENT_PAD = mode === "full" ? 6 : 5;
+  const RX = mode === "full" ? 4 : 3;
+  const TRUNC_L = mode === "full" ? 18 : 13;
+  const TRUNC_R = mode === "full" ? 16 : 12;
+  return { NODE_H, NODE_GAP, LEFT_W, RIGHT_W, SVG_W, RIGHT_X, PAD_TOP, FONT, FONT_COUNT, TEXT_X, TEXT_Y, ACCENT_W, ACCENT_PAD, RX, TRUNC_L, TRUNC_R };
 }
 
 const TYPE_COLORS = [
@@ -324,7 +323,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
             const borderColor =
               isConnected ? color : "var(--border)";
             const borderWidth =
-              isConnected || hoverType === i ? 1.5 : 1;
+              isConnected || hoverType === i ? 1 : 0.5;
 
             return (
               <g
@@ -358,10 +357,10 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                 />
                 <text
                   x={L.TEXT_X}
-                  y={y + L.TEXT_Y1}
+                  y={y + L.TEXT_Y}
                   style={{
-                    fontSize: L.FONT_NAME,
-                    fontWeight: 600,
+                    fontSize: L.FONT,
+                    fontWeight: 400,
                     fill: "var(--report-text)",
                     fontFamily: "var(--font-sans)",
                     opacity: isDimmed ? 0.3 : 1,
@@ -371,17 +370,18 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                   {truncate(ct.name, L.TRUNC_L)}
                 </text>
                 <text
-                  x={L.TEXT_X}
-                  y={y + L.TEXT_Y2}
+                  x={L.LEFT_W - L.TEXT_X}
+                  y={y + L.TEXT_Y}
+                  textAnchor="end"
                   style={{
-                    fontSize: L.FONT_SUB,
+                    fontSize: L.FONT_COUNT,
                     fill: "var(--report-text-muted)",
                     fontFamily: "var(--font-mono)",
                     opacity: isDimmed ? 0.3 : 1,
                     transition: "opacity 0.15s",
                   }}
                 >
-                  {ct.count.toLocaleString()} items
+                  {ct.count.toLocaleString()}
                 </text>
               </g>
             );
@@ -412,7 +412,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                     ? "var(--report-blue)"
                     : "var(--border)";
             const borderWidth =
-              isConnected || hoverTax === i ? 1.5 : isShared ? 1.5 : 1;
+              isConnected || hoverTax === i ? 1 : isShared ? 1 : 0.5;
 
             return (
               <g
@@ -436,9 +436,9 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                 />
                 <text
                   x={L.RIGHT_X + L.TEXT_X}
-                  y={y + L.TEXT_Y1}
+                  y={y + L.TEXT_Y}
                   style={{
-                    fontSize: L.FONT_NAME,
+                    fontSize: L.FONT,
                     fontWeight: isShared ? 600 : 400,
                     fill: "var(--report-text)",
                     fontFamily: "var(--font-sans)",
@@ -448,20 +448,22 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                 >
                   {truncate(tax.name, L.TRUNC_R)}
                 </text>
-                <text
-                  x={L.RIGHT_X + L.TEXT_X}
-                  y={y + L.TEXT_Y2}
-                  style={{
-                    fontSize: L.FONT_SUB,
-                    fill: "var(--report-text-muted)",
-                    fontFamily: "var(--font-mono)",
-                    opacity: isDimmed ? 0.3 : 1,
-                    transition: "opacity 0.15s",
-                  }}
-                >
-                  {tax.count} {tax.count === 1 ? "term" : "terms"} &middot;{" "}
-                  {tax.usedBy.length} {tax.usedBy.length === 1 ? "type" : "types"}
-                </text>
+                {tax.usedBy.length > 1 && (
+                  <text
+                    x={L.RIGHT_X + L.RIGHT_W - L.TEXT_X}
+                    y={y + L.TEXT_Y}
+                    textAnchor="end"
+                    style={{
+                      fontSize: L.FONT_COUNT,
+                      fill: "var(--report-text-muted)",
+                      fontFamily: "var(--font-mono)",
+                      opacity: isDimmed ? 0.3 : 1,
+                      transition: "opacity 0.15s",
+                    }}
+                  >
+                    &times;{tax.usedBy.length}
+                  </text>
+                )}
               </g>
             );
           })}
