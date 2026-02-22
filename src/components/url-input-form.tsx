@@ -44,6 +44,7 @@ export function UrlInputForm({ onSubmit, disabled }: UrlInputFormProps) {
             placeholder="example.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            autoFocus
             disabled={disabled}
             className="flex-1 h-11 px-4 rounded-lg bg-[var(--report-surface-2)] border border-[var(--border)] text-[var(--report-text)] placeholder:text-[var(--report-text-muted)] text-[15px] outline-none transition-all focus:border-[var(--report-accent)] focus:ring-2 focus:ring-[var(--report-accent-dim)] disabled:opacity-50 font-sans"
           />

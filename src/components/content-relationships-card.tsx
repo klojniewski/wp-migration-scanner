@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import type { ContentType } from "@/types";
 
 interface TaxonomyNode {
@@ -43,30 +44,76 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max - 1) + "\u2026" : text;
 }
 
-const NODE_H = 52;
-const NODE_GAP = 14;
-const LEFT_W = 200;
-const RIGHT_W = 200;
-const SVG_W = 720;
-const RIGHT_X = SVG_W - RIGHT_W;
-const PAD_TOP = 16;
+function layoutFor(full: boolean) {
+  const NODE_H = full ? 44 : 32;
+  const NODE_GAP = full ? 10 : 6;
+  const LEFT_W = full ? 220 : 160;
+  const RIGHT_W = full ? 220 : 160;
+  const SVG_W = full ? 800 : 600;
+  const RIGHT_X = SVG_W - RIGHT_W;
+  const PAD_TOP = full ? 12 : 8;
+  const FONT_NAME = full ? 11 : 9.5;
+  const FONT_SUB = full ? 9 : 8;
+  const TEXT_X = full ? 14 : 10;
+  const TEXT_Y1 = full ? 18 : 14;
+  const TEXT_Y2 = full ? 32 : 26;
+  const ACCENT_W = full ? 4 : 3;
+  const ACCENT_PAD = full ? 8 : 6;
+  const RX = full ? 6 : 5;
+  const TRUNC_L = full ? 22 : 18;
+  const TRUNC_R = full ? 20 : 16;
+  return { NODE_H, NODE_GAP, LEFT_W, RIGHT_W, SVG_W, RIGHT_X, PAD_TOP, FONT_NAME, FONT_SUB, TEXT_X, TEXT_Y1, TEXT_Y2, ACCENT_W, ACCENT_PAD, RX, TRUNC_L, TRUNC_R };
+}
+
+const TYPE_COLORS = [
+  "#60a5fa", // blue
+  "#34d399", // emerald
+  "#fbbf24", // amber
+  "#fb923c", // orange
+  "#fb7185", // rose
+  "#22d3ee", // cyan
+  "#a78bfa", // violet
+  "#f472b6", // pink
+  "#a3e635", // lime
+  "#38bdf8", // sky
+];
+
+function strokeWidthForCount(count: number): number {
+  return Math.min(0.8 + Math.log2(Math.max(count, 1)) * 0.4, 3);
+}
 
 export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsCardProps) {
+  const [hoverType, setHoverType] = useState<number | null>(null);
+  const [hoverTax, setHoverTax] = useState<number | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  const closeFullscreen = useCallback(() => setFullscreen(false), []);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeFullscreen(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [fullscreen, closeFullscreen]);
+
   const taxonomies = buildTaxonomyNodes(contentTypes);
 
   if (taxonomies.length === 0) return null;
 
+  const L = layoutFor(fullscreen);
+  const isHovering = hoverType !== null || hoverTax !== null;
+
   const leftCount = contentTypes.length;
   const rightCount = taxonomies.length;
-  const leftColH = leftCount * (NODE_H + NODE_GAP) - NODE_GAP;
-  const rightColH = rightCount * (NODE_H + NODE_GAP) - NODE_GAP;
+  const leftColH = leftCount * (L.NODE_H + L.NODE_GAP) - L.NODE_GAP;
+  const rightColH = rightCount * (L.NODE_H + L.NODE_GAP) - L.NODE_GAP;
 
-  const leftTop = PAD_TOP + Math.max(0, (rightColH - leftColH) / 2);
-  const rightTop = PAD_TOP + Math.max(0, (leftColH - rightColH) / 2);
-  const svgH = Math.max(leftColH, rightColH) + PAD_TOP * 2;
+  const leftTop = L.PAD_TOP + Math.max(0, (rightColH - leftColH) / 2);
+  const rightTop = L.PAD_TOP + Math.max(0, (leftColH - rightColH) / 2);
+  const svgH = Math.max(leftColH, rightColH) + L.PAD_TOP * 2;
 
-  const typeY = (i: number) => leftTop + i * (NODE_H + NODE_GAP);
-  const taxY = (i: number) => rightTop + i * (NODE_H + NODE_GAP);
+  const typeY = (i: number) => leftTop + i * (L.NODE_H + L.NODE_GAP);
+  const taxY = (i: number) => rightTop + i * (L.NODE_H + L.NODE_GAP);
 
   const typeIndex = new Map(contentTypes.map((ct, i) => [ct.slug, i]));
   const taxIndex = new Map(taxonomies.map((t, i) => [t.slug, i]));
@@ -77,6 +124,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
   const connections: {
     ctIdx: number;
     taxIdx: number;
+    taxCount: number;
     isShared: boolean;
   }[] = [];
 
@@ -86,8 +134,18 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
       const ti = taxIndex.get(tax.slug);
       if (ti === undefined) continue;
       const node = taxonomies[ti];
-      connections.push({ ctIdx: ci, taxIdx: ti, isShared: node.usedBy.length >= 2 });
+      connections.push({ ctIdx: ci, taxIdx: ti, taxCount: node.count, isShared: node.usedBy.length >= 2 });
     }
+  }
+
+  // Build sets of connected indices for hover highlighting
+  const connectedTaxForType = new Map<number, Set<number>>();
+  const connectedTypeForTax = new Map<number, Set<number>>();
+  for (const { ctIdx, taxIdx } of connections) {
+    if (!connectedTaxForType.has(ctIdx)) connectedTaxForType.set(ctIdx, new Set());
+    connectedTaxForType.get(ctIdx)!.add(taxIdx);
+    if (!connectedTypeForTax.has(taxIdx)) connectedTypeForTax.set(taxIdx, new Set());
+    connectedTypeForTax.get(taxIdx)!.add(ctIdx);
   }
 
   return (
@@ -117,131 +175,8 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
         {taxonomies.length === 1 ? "taxonomy" : "taxonomies"}.
       </p>
 
-      <div className="bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] p-4 overflow-x-auto">
-        <svg
-          viewBox={`0 0 ${SVG_W} ${svgH}`}
-          className="w-full"
-          role="img"
-          aria-label="Content type and taxonomy relationship diagram"
-        >
-          {/* Connections */}
-          {connections
-            .sort((a, b) => Number(a.isShared) - Number(b.isShared))
-            .map(({ ctIdx, taxIdx, isShared }) => {
-              const x1 = LEFT_W;
-              const y1 = typeY(ctIdx) + NODE_H / 2;
-              const x2 = RIGHT_X;
-              const y2 = taxY(taxIdx) + NODE_H / 2;
-              const mx = (x1 + x2) / 2;
-
-              return (
-                <path
-                  key={`c-${ctIdx}-${taxIdx}`}
-                  d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
-                  fill="none"
-                  stroke={isShared ? "var(--report-blue)" : "var(--border)"}
-                  strokeWidth={isShared ? 2 : 1.5}
-                  opacity={isShared ? 0.8 : 0.4}
-                />
-              );
-            })}
-
-          {/* Left column — content types */}
-          {contentTypes.map((ct, i) => {
-            const y = typeY(i);
-            return (
-              <g key={`l-${ct.slug}`}>
-                <rect
-                  x={0}
-                  y={y}
-                  width={LEFT_W}
-                  height={NODE_H}
-                  rx={8}
-                  fill="var(--report-surface-2)"
-                  stroke="var(--border)"
-                  strokeWidth={1.5}
-                />
-                <text
-                  x={14}
-                  y={y + 22}
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    fill: "var(--report-text)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  {truncate(ct.name, 20)}
-                </text>
-                <text
-                  x={14}
-                  y={y + 40}
-                  style={{
-                    fontSize: 11,
-                    fill: "var(--report-text-muted)",
-                    fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  {ct.count.toLocaleString()} items
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Right column — taxonomies */}
-          {taxonomies.map((tax, i) => {
-            const y = taxY(i);
-            const isShared = tax.usedBy.length >= 2;
-            const isOrphaned = tax.count === 0;
-
-            return (
-              <g key={`r-${tax.slug}`}>
-                <rect
-                  x={RIGHT_X}
-                  y={y}
-                  width={RIGHT_W}
-                  height={NODE_H}
-                  rx={8}
-                  fill={isShared ? "var(--report-blue-dim)" : "var(--report-surface-2)"}
-                  stroke={
-                    isOrphaned
-                      ? "var(--report-red)"
-                      : isShared
-                        ? "var(--report-blue)"
-                        : "var(--border)"
-                  }
-                  strokeWidth={isShared ? 2 : 1.5}
-                  strokeDasharray={isOrphaned ? "5 3" : "none"}
-                />
-                <text
-                  x={RIGHT_X + 14}
-                  y={y + 22}
-                  style={{
-                    fontSize: 13,
-                    fontWeight: isShared ? 600 : 400,
-                    fill: "var(--report-text)",
-                    fontFamily: "var(--font-sans)",
-                  }}
-                >
-                  {truncate(tax.name, 18)}
-                </text>
-                <text
-                  x={RIGHT_X + 14}
-                  y={y + 40}
-                  style={{
-                    fontSize: 11,
-                    fill: "var(--report-text-muted)",
-                    fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  {tax.count} {tax.count === 1 ? "term" : "terms"} &middot;{" "}
-                  {tax.usedBy.length} {tax.usedBy.length === 1 ? "type" : "types"}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
+      {/* Chart diagram */}
+      {renderDiagram()}
 
       {/* Legend */}
       <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[11px] text-[var(--report-text-muted)]">
@@ -266,7 +201,265 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
           />
           Exclusive to one type
         </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-6 h-0.5 rounded-full" style={{ background: "#60a5fa" }} />
+          Hover to trace connections
+        </span>
       </div>
+
+      {/* Fullscreen overlay */}
+      {fullscreen && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col"
+          style={{ background: "var(--report-bg, #0a0a0a)" }}
+        >
+          <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
+            <span className="text-[13px] font-semibold text-[var(--report-text)]">
+              Content Relationships
+              <span className="ml-2 text-[11px] font-normal text-[var(--report-text-muted)]">
+                {contentTypes.length} types &middot; {taxonomies.length} taxonomies
+              </span>
+            </span>
+            <button
+              onClick={closeFullscreen}
+              className="text-[var(--report-text-muted)] hover:text-[var(--report-text)] text-[20px] leading-none px-2 py-1 rounded hover:bg-[var(--report-surface-2)] transition-colors"
+              aria-label="Close fullscreen"
+            >
+              &times;
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto p-6 flex items-start justify-center">
+            {renderDiagram()}
+          </div>
+          <div className="px-5 py-2 border-t border-[var(--border)] text-[11px] text-[var(--report-text-muted)]">
+            Press <kbd className="px-1 py-0.5 rounded bg-[var(--report-surface-2)] text-[var(--report-text)] text-[10px]">Esc</kbd> to close
+          </div>
+        </div>
+      )}
     </section>
   );
+
+  function renderDiagram() {
+    return (
+      <div className={fullscreen ? "w-full max-w-[900px]" : "bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] p-3 overflow-x-auto relative group"}>
+        {!fullscreen && (
+          <button
+            onClick={() => setFullscreen(true)}
+            className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--report-text-muted)] hover:text-[var(--report-text)] p-1 rounded hover:bg-[var(--report-surface-2)]"
+            aria-label="Open fullscreen"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="10 2 14 2 14 6" />
+              <polyline points="6 14 2 14 2 10" />
+              <line x1="14" y1="2" x2="9.5" y2="6.5" />
+              <line x1="2" y1="14" x2="6.5" y2="9.5" />
+            </svg>
+          </button>
+        )}
+        <svg
+          viewBox={`0 0 ${L.SVG_W} ${svgH}`}
+          className="w-full"
+          role="img"
+          aria-label="Content type and taxonomy relationship diagram"
+          onMouseLeave={() => { setHoverType(null); setHoverTax(null); }}
+        >
+          {/* Connections */}
+          {connections
+            .sort((a, b) => Number(a.isShared) - Number(b.isShared))
+            .map(({ ctIdx, taxIdx, taxCount }) => {
+              const x1 = L.LEFT_W;
+              const y1 = typeY(ctIdx) + L.NODE_H / 2;
+              const x2 = L.RIGHT_X;
+              const y2 = taxY(taxIdx) + L.NODE_H / 2;
+              const mx = (x1 + x2) / 2;
+
+              const color = TYPE_COLORS[ctIdx % TYPE_COLORS.length];
+              const baseWidth = strokeWidthForCount(taxCount);
+
+              const isActive =
+                hoverType === ctIdx ||
+                hoverTax === taxIdx;
+
+              let opacity: number;
+              let width: number;
+              if (!isHovering) {
+                opacity = 0.35;
+                width = baseWidth;
+              } else if (isActive) {
+                opacity = 0.85;
+                width = baseWidth * 1.3;
+              } else {
+                opacity = 0.06;
+                width = baseWidth;
+              }
+
+              return (
+                <path
+                  key={`c-${ctIdx}-${taxIdx}`}
+                  d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={width}
+                  opacity={opacity}
+                  style={{ transition: "opacity 0.15s, stroke-width 0.15s" }}
+                />
+              );
+            })}
+
+          {/* Left column — content types */}
+          {contentTypes.map((ct, i) => {
+            const y = typeY(i);
+            const color = TYPE_COLORS[i % TYPE_COLORS.length];
+
+            const isConnected =
+              hoverTax !== null && connectedTypeForTax.get(hoverTax)?.has(i);
+            const isDimmed =
+              isHovering && hoverType !== i && !isConnected;
+
+            const borderColor =
+              isConnected ? color : "var(--border)";
+            const borderWidth =
+              isConnected || hoverType === i ? 1.5 : 1;
+
+            return (
+              <g
+                key={`l-${ct.slug}`}
+                onMouseEnter={() => { setHoverType(i); setHoverTax(null); }}
+                onMouseLeave={() => setHoverType(null)}
+                style={{ cursor: "pointer" }}
+              >
+                <rect
+                  x={0}
+                  y={y}
+                  width={L.LEFT_W}
+                  height={L.NODE_H}
+                  rx={L.RX}
+                  fill="var(--report-surface-2)"
+                  stroke={borderColor}
+                  strokeWidth={borderWidth}
+                  style={{ transition: "stroke 0.15s, stroke-width 0.15s" }}
+                />
+                {/* Colored accent bar */}
+                <rect
+                  x={0}
+                  y={y + L.ACCENT_PAD}
+                  width={L.ACCENT_W}
+                  height={L.NODE_H - L.ACCENT_PAD * 2}
+                  rx={L.ACCENT_W / 2}
+                  fill={color}
+                  opacity={isDimmed ? 0.3 : 1}
+                  style={{ transition: "opacity 0.15s" }}
+                />
+                <text
+                  x={L.TEXT_X}
+                  y={y + L.TEXT_Y1}
+                  style={{
+                    fontSize: L.FONT_NAME,
+                    fontWeight: 600,
+                    fill: "var(--report-text)",
+                    fontFamily: "var(--font-sans)",
+                    opacity: isDimmed ? 0.3 : 1,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  {truncate(ct.name, L.TRUNC_L)}
+                </text>
+                <text
+                  x={L.TEXT_X}
+                  y={y + L.TEXT_Y2}
+                  style={{
+                    fontSize: L.FONT_SUB,
+                    fill: "var(--report-text-muted)",
+                    fontFamily: "var(--font-mono)",
+                    opacity: isDimmed ? 0.3 : 1,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  {ct.count.toLocaleString()} items
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Right column — taxonomies */}
+          {taxonomies.map((tax, i) => {
+            const y = taxY(i);
+            const isShared = tax.usedBy.length >= 2;
+            const isOrphaned = tax.count === 0;
+
+            const isConnected =
+              hoverType !== null && connectedTaxForType.get(hoverType)?.has(i);
+            const isDimmed =
+              isHovering && hoverTax !== i && !isConnected;
+
+            const highlightColor =
+              hoverType !== null
+                ? TYPE_COLORS[hoverType % TYPE_COLORS.length]
+                : null;
+
+            const borderColor =
+              isConnected && highlightColor
+                ? highlightColor
+                : isOrphaned
+                  ? "var(--report-red)"
+                  : isShared
+                    ? "var(--report-blue)"
+                    : "var(--border)";
+            const borderWidth =
+              isConnected || hoverTax === i ? 1.5 : isShared ? 1.5 : 1;
+
+            return (
+              <g
+                key={`r-${tax.slug}`}
+                onMouseEnter={() => { setHoverTax(i); setHoverType(null); }}
+                onMouseLeave={() => setHoverTax(null)}
+                style={{ cursor: "pointer" }}
+              >
+                <rect
+                  x={L.RIGHT_X}
+                  y={y}
+                  width={L.RIGHT_W}
+                  height={L.NODE_H}
+                  rx={L.RX}
+                  fill={isShared ? "var(--report-blue-dim)" : "var(--report-surface-2)"}
+                  stroke={borderColor}
+                  strokeWidth={borderWidth}
+                  strokeDasharray={isOrphaned ? "4 2" : "none"}
+                  style={{ transition: "stroke 0.15s, stroke-width 0.15s" }}
+                />
+                <text
+                  x={L.RIGHT_X + L.TEXT_X}
+                  y={y + L.TEXT_Y1}
+                  style={{
+                    fontSize: L.FONT_NAME,
+                    fontWeight: isShared ? 600 : 400,
+                    fill: "var(--report-text)",
+                    fontFamily: "var(--font-sans)",
+                    opacity: isDimmed ? 0.3 : 1,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  {truncate(tax.name, L.TRUNC_R)}
+                </text>
+                <text
+                  x={L.RIGHT_X + L.TEXT_X}
+                  y={y + L.TEXT_Y2}
+                  style={{
+                    fontSize: L.FONT_SUB,
+                    fill: "var(--report-text-muted)",
+                    fontFamily: "var(--font-mono)",
+                    opacity: isDimmed ? 0.3 : 1,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  {tax.count} {tax.count === 1 ? "term" : "terms"} &middot;{" "}
+                  {tax.usedBy.length} {tax.usedBy.length === 1 ? "type" : "types"}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  }
 }
