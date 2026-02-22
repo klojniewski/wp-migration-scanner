@@ -44,24 +44,24 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max - 1) + "\u2026" : text;
 }
 
-function layoutFor(full: boolean) {
-  const NODE_H = full ? 44 : 32;
-  const NODE_GAP = full ? 10 : 6;
-  const LEFT_W = full ? 220 : 160;
-  const RIGHT_W = full ? 220 : 160;
-  const SVG_W = full ? 800 : 600;
+function layoutFor(mode: "inline" | "full") {
+  const NODE_H = mode === "full" ? 44 : 32;
+  const NODE_GAP = mode === "full" ? 10 : 6;
+  const LEFT_W = mode === "full" ? 220 : 130;
+  const RIGHT_W = mode === "full" ? 220 : 130;
+  const SVG_W = mode === "full" ? 800 : 420;
   const RIGHT_X = SVG_W - RIGHT_W;
-  const PAD_TOP = full ? 12 : 8;
-  const FONT_NAME = full ? 11 : 9.5;
-  const FONT_SUB = full ? 9 : 8;
-  const TEXT_X = full ? 14 : 10;
-  const TEXT_Y1 = full ? 18 : 14;
-  const TEXT_Y2 = full ? 32 : 26;
-  const ACCENT_W = full ? 4 : 3;
-  const ACCENT_PAD = full ? 8 : 6;
-  const RX = full ? 6 : 5;
-  const TRUNC_L = full ? 22 : 18;
-  const TRUNC_R = full ? 20 : 16;
+  const PAD_TOP = mode === "full" ? 12 : 8;
+  const FONT_NAME = mode === "full" ? 11 : 10;
+  const FONT_SUB = mode === "full" ? 9 : 8;
+  const TEXT_X = mode === "full" ? 14 : 10;
+  const TEXT_Y1 = mode === "full" ? 18 : 14;
+  const TEXT_Y2 = mode === "full" ? 32 : 26;
+  const ACCENT_W = mode === "full" ? 4 : 3;
+  const ACCENT_PAD = mode === "full" ? 8 : 6;
+  const RX = mode === "full" ? 6 : 5;
+  const TRUNC_L = mode === "full" ? 22 : 14;
+  const TRUNC_R = mode === "full" ? 20 : 14;
   return { NODE_H, NODE_GAP, LEFT_W, RIGHT_W, SVG_W, RIGHT_X, PAD_TOP, FONT_NAME, FONT_SUB, TEXT_X, TEXT_Y1, TEXT_Y2, ACCENT_W, ACCENT_PAD, RX, TRUNC_L, TRUNC_R };
 }
 
@@ -100,7 +100,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
 
   if (taxonomies.length === 0) return null;
 
-  const L = layoutFor(fullscreen);
+  const L = layoutFor(fullscreen ? "full" : "inline");
   const isHovering = hoverType !== null || hoverTax !== null;
 
   const leftCount = contentTypes.length;
@@ -203,7 +203,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-6 h-0.5 rounded-full" style={{ background: "#60a5fa" }} />
-          Hover to trace connections
+          Tap or hover to trace
         </span>
       </div>
 
@@ -231,7 +231,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
           <div className="flex-1 overflow-auto p-6 flex items-start justify-center">
             {renderDiagram()}
           </div>
-          <div className="px-5 py-2 border-t border-[var(--border)] text-[11px] text-[var(--report-text-muted)]">
+          <div className="hidden sm:block px-5 py-2 border-t border-[var(--border)] text-[11px] text-[var(--report-text-muted)]">
             Press <kbd className="px-1 py-0.5 rounded bg-[var(--report-surface-2)] text-[var(--report-text)] text-[10px]">Esc</kbd> to close
           </div>
         </div>
@@ -245,7 +245,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
         {!fullscreen && (
           <button
             onClick={() => setFullscreen(true)}
-            className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--report-text-muted)] hover:text-[var(--report-text)] p-1 rounded hover:bg-[var(--report-surface-2)]"
+            className="absolute top-2 right-2 z-10 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity text-[var(--report-text-muted)] hover:text-[var(--report-text)] p-1 rounded hover:bg-[var(--report-surface-2)]"
             aria-label="Open fullscreen"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -262,6 +262,10 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
           role="img"
           aria-label="Content type and taxonomy relationship diagram"
           onMouseLeave={() => { setHoverType(null); setHoverTax(null); }}
+          onClick={(e) => {
+            // Tap on empty SVG area clears highlight on touch devices
+            if (e.target === e.currentTarget) { setHoverType(null); setHoverTax(null); }
+          }}
         >
           {/* Connections */}
           {connections
@@ -326,6 +330,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                 key={`l-${ct.slug}`}
                 onMouseEnter={() => { setHoverType(i); setHoverTax(null); }}
                 onMouseLeave={() => setHoverType(null)}
+                onClick={() => { setHoverType(hoverType === i ? null : i); setHoverTax(null); }}
                 style={{ cursor: "pointer" }}
               >
                 <rect
@@ -413,6 +418,7 @@ export function ContentRelationshipsCard({ contentTypes }: ContentRelationshipsC
                 key={`r-${tax.slug}`}
                 onMouseEnter={() => { setHoverTax(i); setHoverType(null); }}
                 onMouseLeave={() => setHoverTax(null)}
+                onClick={() => { setHoverTax(hoverTax === i ? null : i); setHoverType(null); }}
                 style={{ cursor: "pointer" }}
               >
                 <rect

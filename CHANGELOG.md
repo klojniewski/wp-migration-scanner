@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] - 2026-02-22
+
+### Added
+- Interactive content relationships diagram: hover-to-highlight paths and connected nodes
+- Per-type color palette (10 colors) with colored accent bars on content type nodes
+- Logarithmic line thickness proportional to taxonomy term count
+- Fullscreen mode with expand button (hover-revealed) and Escape-to-close
+- Smooth CSS transitions on all path and node state changes
+- "Hover to trace connections" legend entry
+
+### Changed
+- Compact inline chart layout: smaller nodes (32px), tighter spacing, smaller fonts
+- Fullscreen uses larger layout (44px nodes, 220px columns) to use the extra space
+- Connection paths colored by source content type instead of shared/unshared binary
+
 ## [0.3.2] - 2026-02-22
 
 ### Changed
