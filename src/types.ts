@@ -2,6 +2,7 @@ export interface TaxonomyRef {
   name: string;
   slug: string;
   count: number;
+  terms: string[];
 }
 
 export type ComplexityLevel = "simple" | "moderate" | "complex";

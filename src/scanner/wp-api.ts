@@ -122,17 +122,26 @@ export async function scanViaApi(
   const typeEntries = parseTypesResponse(typesData);
   const taxEntries = parseTaxonomiesResponse(taxData);
 
-  // Build taxonomy lookup: slug → { name, slug, count }
-  const taxLookup = new Map<string, { name: string; slug: string; rest_base: string; count: number }>();
+  // Build taxonomy lookup: slug → { name, slug, count, terms }
+  const taxLookup = new Map<string, { name: string; slug: string; rest_base: string; count: number; terms: string[] }>();
 
   const taxCountResults = await Promise.allSettled(
     taxEntries.map(async (tax) => {
-      const res = await fetcher(`${api}/${tax.rest_base}?per_page=1`, {
+      const res = await fetcher(`${api}/${tax.rest_base}?per_page=100`, {
         headers: DEFAULT_HEADERS,
         signal: AbortSignal.timeout(10_000),
       });
       const total = res.ok ? parseInt(res.headers.get("X-WP-Total") || "0", 10) : 0;
-      return { slug: tax.slug, name: tax.name, rest_base: tax.rest_base, count: total };
+      let terms: string[] = [];
+      if (res.ok) {
+        try {
+          const json = (await res.json()) as { name: string }[];
+          terms = json.map((t) => decodeHtmlEntities(t.name)).filter(Boolean);
+        } catch {
+          // body parse failed — keep empty terms
+        }
+      }
+      return { slug: tax.slug, name: tax.name, rest_base: tax.rest_base, count: total, terms };
     })
   );
 
@@ -163,7 +172,7 @@ export async function scanViaApi(
         const taxonomies: TaxonomyRef[] = type.taxonomies
           .map((taxSlug) => taxLookup.get(taxSlug))
           .filter((t): t is NonNullable<typeof t> => t != null)
-          .map((t) => ({ name: t.name, slug: t.slug, count: t.count }));
+          .map((t) => ({ name: t.name, slug: t.slug, count: t.count, terms: t.terms }));
 
         const contentType: ContentType = {
           name: type.name,

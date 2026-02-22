@@ -53,6 +53,7 @@ export function buildFallbackContentTypes(
           name: "Categories",
           slug: "category",
           count: allCategories.size,
+          terms: [...allCategories],
         });
       }
     }

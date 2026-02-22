@@ -1,6 +1,7 @@
 "use client";
 
-import type { ComplexityLevel, ContentType } from "@/types";
+import { useState, useRef, useEffect } from "react";
+import type { ComplexityLevel, ContentType, TaxonomyRef } from "@/types";
 
 const COMPLEXITY_CONFIG: Record<
   ComplexityLevel,
@@ -25,6 +26,66 @@ const COMPLEXITY_CONFIG: Record<
     textColor: "var(--report-red)",
   },
 };
+
+function TaxonomyBadge({ tax }: { tax: TaxonomyRef }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const hasTerms = tax.terms.length > 0;
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        onClick={hasTerms ? () => setOpen((o) => !o) : undefined}
+        className={`text-[11px] font-mono py-0.5 px-2 rounded bg-[var(--report-surface-3)] text-[var(--report-text-secondary)] whitespace-nowrap border-0 ${
+          hasTerms
+            ? "cursor-pointer hover:bg-[var(--report-surface-2)] hover:text-[var(--report-text)] transition-colors"
+            : "cursor-default"
+        }`}
+      >
+        {tax.name} ({tax.count})
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] max-w-[260px] bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-lg">
+          <div className="py-2 px-3 border-b border-[var(--border)]">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--report-text-muted)]">
+              {tax.name}
+            </span>
+          </div>
+          <ul className="max-h-[200px] overflow-y-auto py-1.5 px-3 list-none">
+            {tax.terms.map((term, i) => (
+              <li
+                key={`${i}-${term}`}
+                className="text-[12px] text-[var(--report-text-secondary)] py-0.5"
+              >
+                {term}
+              </li>
+            ))}
+          </ul>
+          {tax.count > tax.terms.length && (
+            <div className="py-1.5 px-3 border-t border-[var(--border)]">
+              <span className="text-[11px] text-[var(--report-text-muted)] italic">
+                and {tax.count - tax.terms.length} more
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface ContentTypesTableProps {
   contentTypes: ContentType[];
@@ -137,12 +198,7 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
                     <div className="flex flex-wrap gap-1">
                       {ct.taxonomies.length > 0 ? (
                         ct.taxonomies.map((tax) => (
-                          <span
-                            key={tax.slug}
-                            className="text-[11px] font-mono py-0.5 px-2 rounded bg-[var(--report-surface-3)] text-[var(--report-text-secondary)] whitespace-nowrap"
-                          >
-                            {tax.name} ({tax.count})
-                          </span>
+                          <TaxonomyBadge key={tax.slug} tax={tax} />
                         ))
                       ) : (
                         <span className="text-[11px] font-mono py-0.5 px-2 rounded bg-[var(--report-surface-3)] text-[var(--report-text-secondary)]">

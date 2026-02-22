@@ -32,7 +32,7 @@
 
 **Web UI — Report**
 - Dark-themed, data-dense professional migration report design (DM Sans + JetBrains Mono)
-- Content types table with counts, taxonomies, sample titles, and complexity pill badges
+- Content types table with counts, taxonomies (clickable badges showing term names), sample titles, and complexity pill badges
 - Content relationships diagram (SVG bezier curves linking types to taxonomies, shared taxonomy highlighting, orphaned taxonomy detection)
 - URL structure card with patterns and multilingual info
 - Multilingual coverage matrix

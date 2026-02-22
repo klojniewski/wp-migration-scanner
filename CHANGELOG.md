@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.1] - 2026-02-22
+
+### Added
+- Clickable taxonomy badges that reveal term names in a popover (e.g., click "Categories (14)" to see "News", "Tutorials", etc.)
+- Taxonomy term names fetched from REST API at zero additional HTTP cost (bumped per_page from 1 to 100)
+- Fallback mode also populates terms from RSS categories
+
 ## [0.3.0] - 2026-02-22
 
 ### Added
