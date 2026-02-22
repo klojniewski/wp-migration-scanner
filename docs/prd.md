@@ -1,6 +1,6 @@
 # **PRD: WordPress Migration Scanner**
 
-**Owner:** Chris / Jakub **Status:** Draft v0.3
+**Owner:** Chris / Jakub **Status:** Draft v0.4
 
 ---
 
@@ -8,37 +8,61 @@
 
 ### Done
 
-- **Content Structure Map (Section 1)** — fully implemented
-  - REST API scanner: fetches types, taxonomies, counts, sample titles via `/wp-json/wp/v2/`
-  - Sitemap fallback: parses `sitemap.xml` / `sitemap_index.xml` / `wp-sitemap.xml`, groups URLs by pattern
-  - RSS fallback: extracts post titles and categories from `/feed/`
-  - Graceful degradation: each module fails independently, partial results still shown
-- **URL Structure (Section 3)** — fully implemented
-  - URL pattern detection from sitemap data (e.g. `/blog/{slug}/`, `/case-studies/{slug}/`)
-  - Total indexed URL count
-  - Multilingual detection (subdirectory, subdomain, hreflang patterns)
-- **Detected Plugins (Section 4)** — fully implemented
-  - Asset path extraction (`/wp-content/plugins/{slug}/`) from homepage HTML
-  - HTML signature matching (comments, CSS classes, meta tags) for ~17 signature patterns
-  - Known plugins database (~40 entries) covering page builders, SEO, forms, e-commerce, multilingual, cache, analytics, security
-  - Plugins grouped by category, page builders highlighted
-- **CLI tool** — `npx tsx src/cli.ts <url>` outputs formatted report with all sections
-- **Web UI** — Next.js app with URL input, scan progress, and results display
-  - Content types table with counts, taxonomies, sample titles
-  - URL structure card with patterns and multilingual info
-  - Detected plugins card with category-grouped badges
-  - API route (`POST /api/scan`) powering the frontend
-- **Infrastructure** — Next.js 15, TypeScript, shadcn/ui components, redirect-following URL normalization
+**Scanner Core**
+- REST API scanner: fetches types, taxonomies, counts, sample titles via `/wp-json/wp/v2/`
+- Sitemap fallback: parses `sitemap.xml` / `sitemap_index.xml` / `wp-sitemap.xml`, groups URLs by pattern
+- RSS fallback: extracts post titles and categories from `/feed/`
+- Graceful degradation: each module fails independently, partial results still shown
+- Content complexity analysis: classifies posts as simple / moderate / complex from sample post HTML (detects ACF blocks, shortcodes, page builder markup) — zero extra HTTP requests
+- Content relationships: tracks which taxonomies belong to which content types, including 0-count taxonomies
+
+**URL Structure (Section 3)**
+- URL pattern detection from sitemap data (e.g. `/blog/{slug}/`, `/case-studies/{slug}/`)
+- Total indexed URL count
+- Multilingual detection (subdirectory, subdomain, hreflang patterns)
+
+**Detected Plugins (Section 4)**
+- Asset path extraction (`/wp-content/plugins/{slug}/`) from homepage HTML
+- HTML signature matching (comments, CSS classes, meta tags) for ~17 signature patterns
+- Known plugins database (~40 entries) covering page builders, SEO, forms, e-commerce, multilingual, cache, analytics, security
+- Plugins grouped by category, page builders highlighted
+
+**CLI Tool**
+- `npx tsx src/cli.ts <url>` outputs formatted report with all sections including complexity indicators
+
+**Web UI — Report**
+- Dark-themed, data-dense professional migration report design (DM Sans + JetBrains Mono)
+- Content types table with counts, taxonomies, sample titles, and complexity pill badges
+- Content relationships diagram (SVG bezier curves linking types to taxonomies, shared taxonomy highlighting, orphaned taxonomy detection)
+- URL structure card with patterns and multilingual info
+- Multilingual coverage matrix
+- Detected plugins grid with category grouping
+- Annotations engine (10 rules generating contextual migration insights)
+- Migration scope summary
+- Stats row with key scan metrics
+- CTA section ("Want a full audit?")
+- Scan limitations notice
+- Scan warnings display
+- Global dark mode (homepage, form, progress states, report)
+
+**Web UI — Homepage & UX**
+- URL input form with validation
+- Scan progress indicator
+- Shareable report URLs via `?url=` query parameter with auto-scan and "Copy report link" button
+- API route (`POST /api/scan`) with SSRF protection
+
+**Infrastructure**
+- Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui
+- Vercel Analytics
+- 86+ tests across 8 test files (Vitest)
+- Redirect-following URL normalization
+- Modular scanner architecture with pure parsers and centralized HTTP/utils
 
 ### Not Started
 
-- **Website Architecture (Section 2)** — navigation structure extraction, page hierarchy detection, site sections/areas
-  - Requires HTML crawling of homepage + inner pages to extract `<nav>` elements, menu structure, parent/child relationships
-  - Most complex remaining feature — needs a lightweight HTML crawler with DOM parsing
-- **Inner page sampling** — scanning strategy currently only fetches homepage HTML for plugin detection; PRD specifies "homepage + sampled inner pages" for richer plugin/architecture data
-- **Lead magnet CTA** — "We found X — your actual site likely has more. Want a full audit?" messaging
+- **Website Architecture (Section 2)** — navigation structure extraction, page hierarchy detection, site sections/areas. Requires HTML crawling of homepage + inner pages to extract `<nav>` elements, menu structure, parent/child relationships
+- **Inner page sampling** — scanning currently only fetches homepage HTML for plugin detection; PRD specifies "homepage + sampled inner pages" for richer plugin/architecture data
 - **Deployment** — hosting on pagepro.co (or standalone), production configuration
-- **Known limitations messaging** — showing users caveats about detection limits (Section "Known Limitations")
 
 ---
 
