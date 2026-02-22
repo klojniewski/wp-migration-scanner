@@ -17,6 +17,7 @@ describe("buildFallbackContentTypes", () => {
     expect(result[0].slug).toBe("blog");
     expect(result[0].count).toBe(2);
     expect(result[0].isEstimate).toBe(true);
+    expect(result[0].complexity).toBeNull();
     expect(result[1].name).toBe("(Pages)");
     expect(result[1].count).toBe(1);
   });

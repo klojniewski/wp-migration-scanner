@@ -1,5 +1,6 @@
 import type { ContentType, TaxonomyRef } from "../types";
 import { type Fetcher, fetchJson, DEFAULT_HEADERS } from "./http";
+import { analyzeContentComplexity, type WpContentItem } from "./complexity";
 import { decodeHtmlEntities, toErrorMessage } from "./utils";
 
 const SKIP_TYPES = new Set([
@@ -50,17 +51,30 @@ export function parseTaxonomiesResponse(json: Record<string, WpTaxonomy>): WpTax
   return Object.values(json).filter((t) => !SKIP_TAXONOMIES.has(t.slug));
 }
 
-/** Pure parser — extracts count and sample titles from API content response */
+interface WpPostJson {
+  title: { rendered: string };
+  content?: { rendered: string };
+  acf?: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+}
+
+/** Pure parser — extracts count, sample titles, and content items from API response */
 export function parseContentItems(
-  json: Array<{ title: { rendered: string } }>,
+  json: WpPostJson[],
   totalHeader: string | null,
-): { count: number; samples: string[] } {
+): { count: number; samples: string[]; contentItems: WpContentItem[] } {
   const count = parseInt(totalHeader || "0", 10);
   const samples = json
     .map((item) => decodeHtmlEntities(item.title?.rendered || ""))
     .filter(Boolean)
     .slice(0, 5);
-  return { count, samples };
+  const contentItems: WpContentItem[] = json.map((item) => ({
+    contentHtml: item.content?.rendered || "",
+    hasCustomFields:
+      (item.acf != null && Object.keys(item.acf).length > 0) ||
+      (item.meta != null && Object.keys(item.meta).length > 0),
+  }));
+  return { count, samples, contentItems };
 }
 
 export async function probeApi(
@@ -142,8 +156,9 @@ export async function scanViaApi(
           return null;
         }
 
-        const json = (await res.json()) as Array<{ title: { rendered: string } }>;
-        const { count, samples } = parseContentItems(json, res.headers.get("X-WP-Total"));
+        const json = (await res.json()) as WpPostJson[];
+        const { count, samples, contentItems } = parseContentItems(json, res.headers.get("X-WP-Total"));
+        const complexity = analyzeContentComplexity(contentItems);
 
         const taxonomies: TaxonomyRef[] = type.taxonomies
           .map((taxSlug) => taxLookup.get(taxSlug))
@@ -157,6 +172,7 @@ export async function scanViaApi(
           isEstimate: false,
           samples,
           taxonomies,
+          complexity,
         };
 
         return contentType;

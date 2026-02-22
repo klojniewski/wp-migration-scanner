@@ -71,7 +71,7 @@ describe("parseContentItems", () => {
       { title: { rendered: "Hello World" } },
       { title: { rendered: "Second Post" } },
     ];
-    const { count, samples } = parseContentItems(json, "42");
+    const { count, samples } = parseContentItems(json as any, "42");
     expect(count).toBe(42);
     expect(samples).toEqual(["Hello World", "Second Post"]);
   });
@@ -81,7 +81,7 @@ describe("parseContentItems", () => {
       { title: { rendered: "Tom &amp; Jerry" } },
       { title: { rendered: "&quot;Quoted&quot;" } },
     ];
-    const { samples } = parseContentItems(json, "2");
+    const { samples } = parseContentItems(json as any, "2");
     expect(samples[0]).toBe("Tom & Jerry");
     expect(samples[1]).toBe('"Quoted"');
   });
@@ -90,12 +90,12 @@ describe("parseContentItems", () => {
     const json = Array.from({ length: 10 }, (_, i) => ({
       title: { rendered: `Post ${i}` },
     }));
-    const { samples } = parseContentItems(json, "10");
+    const { samples } = parseContentItems(json as any, "10");
     expect(samples).toHaveLength(5);
   });
 
   it("handles null total header", () => {
-    const { count } = parseContentItems([], null);
+    const { count } = parseContentItems([] as any, null);
     expect(count).toBe(0);
   });
 
@@ -105,7 +105,7 @@ describe("parseContentItems", () => {
       { title: { rendered: "" } },
       { title: { rendered: "Another Good" } },
     ];
-    const { samples } = parseContentItems(json, "3");
+    const { samples } = parseContentItems(json as any, "3");
     expect(samples).toEqual(["Good Title", "Another Good"]);
   });
 });

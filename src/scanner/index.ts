@@ -76,6 +76,7 @@ export function buildFallbackContentTypes(
       isEstimate: true,
       samples,
       taxonomies,
+      complexity: null,
     });
   }
 

@@ -4,6 +4,14 @@ export interface TaxonomyRef {
   count: number;
 }
 
+export type ComplexityLevel = "simple" | "moderate" | "complex";
+
+export interface ContentComplexity {
+  level: ComplexityLevel;
+  signals: string[];
+  builder: string | null;
+}
+
 export interface ContentType {
   name: string;
   slug: string;
@@ -11,6 +19,7 @@ export interface ContentType {
   isEstimate: boolean;
   samples: string[];
   taxonomies: TaxonomyRef[];
+  complexity: ContentComplexity | null;
 }
 
 export interface UrlPattern {

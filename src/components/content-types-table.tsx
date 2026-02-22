@@ -1,6 +1,6 @@
 "use client";
 
-import type { ContentType } from "@/types";
+import type { ComplexityLevel, ContentType } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -17,6 +17,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+const COMPLEXITY_CONFIG: Record<ComplexityLevel, { icon: string; label: string; className: string }> = {
+  simple: { icon: "\u{1F7E2}", label: "Simple", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  moderate: { icon: "\u{1F7E1}", label: "Moderate", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  complex: { icon: "\u{1F534}", label: "Complex", className: "bg-red-50 text-red-700 border-red-200" },
+};
 
 interface ContentTypesTableProps {
   contentTypes: ContentType[];
@@ -35,6 +41,7 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
   }
 
   const totalItems = contentTypes.reduce((sum, ct) => sum + ct.count, 0);
+  const hasComplexity = contentTypes.some((ct) => ct.complexity != null);
 
   return (
     <Card>
@@ -51,6 +58,7 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
             <TableRow>
               <TableHead>Type</TableHead>
               <TableHead className="text-right">Count</TableHead>
+              {hasComplexity && <TableHead>Complexity</TableHead>}
               <TableHead>Taxonomies</TableHead>
               <TableHead>Samples</TableHead>
             </TableRow>
@@ -69,6 +77,30 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
                 <TableCell className="text-right tabular-nums">
                   {ct.count.toLocaleString()}
                 </TableCell>
+                {hasComplexity && (
+                  <TableCell>
+                    {ct.complexity ? (
+                      <div className="space-y-1">
+                        <span
+                          className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${COMPLEXITY_CONFIG[ct.complexity.level].className}`}
+                          title={ct.complexity.signals.join(", ")}
+                        >
+                          {COMPLEXITY_CONFIG[ct.complexity.level].icon}{" "}
+                          {ct.complexity.builder || COMPLEXITY_CONFIG[ct.complexity.level].label}
+                        </span>
+                        {ct.complexity.signals.length > 1 && (
+                          <p className="text-xs text-muted-foreground">
+                            {ct.complexity.signals
+                              .filter((s) => s !== ct.complexity!.builder)
+                              .join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">&mdash;</span>
+                    )}
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {ct.taxonomies.length > 0

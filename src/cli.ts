@@ -22,9 +22,17 @@ export function formatReport(result: ScanResult): string {
   let totalItems = 0;
   const allTaxonomySlugs = new Set<string>();
 
+  const complexityIcons = { simple: "🟢", moderate: "🟡", complex: "🔴" } as const;
+
   for (const ct of result.contentTypes) {
     const countStr = ct.isEstimate ? `~${ct.count} items (estimated)` : `${ct.count} items`;
     lines.push(padDots(ct.name, countStr));
+
+    if (ct.complexity) {
+      const icon = complexityIcons[ct.complexity.level];
+      const detail = ct.complexity.builder || ct.complexity.level;
+      lines.push(`  ${icon} ${detail}: ${ct.complexity.signals.join(", ")}`);
+    }
 
     if (ct.taxonomies.length > 0) {
       const taxParts = ct.taxonomies.map((t) => {

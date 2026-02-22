@@ -49,6 +49,7 @@ describe("formatReport", () => {
           isEstimate: false,
           samples: ["Hello World"],
           taxonomies: [],
+          complexity: null,
         },
       ],
     });
@@ -68,6 +69,7 @@ describe("formatReport", () => {
           isEstimate: true,
           samples: [],
           taxonomies: [],
+          complexity: null,
         },
       ],
     });
@@ -88,6 +90,7 @@ describe("formatReport", () => {
             { name: "Categories", slug: "category", count: 5 },
             { name: "Tags", slug: "post_tag", count: 12 },
           ],
+          complexity: null,
         },
       ],
     });
@@ -178,6 +181,7 @@ describe("formatReport", () => {
           isEstimate: false,
           samples: [],
           taxonomies: [{ name: "Categories", slug: "category", count: 3 }],
+          complexity: null,
         },
         {
           name: "Pages",
@@ -186,6 +190,7 @@ describe("formatReport", () => {
           isEstimate: false,
           samples: [],
           taxonomies: [],
+          complexity: null,
         },
       ],
     });
