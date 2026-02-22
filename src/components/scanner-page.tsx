@@ -35,11 +35,7 @@ export function ScannerPage() {
     setUrlParam(url);
 
     try {
-      const res = await fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
+      const res = await fetch(`/api/scan?url=${encodeURIComponent(url)}`);
 
       const data = await res.json();
 

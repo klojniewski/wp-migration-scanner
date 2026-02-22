@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.2] - 2026-02-22
+
+### Changed
+- Switch scan API from POST to GET for Vercel CDN edge caching (15-minute TTL per URL)
+
 ## [0.3.1] - 2026-02-22
 
 ### Added

@@ -4,15 +4,8 @@ import { isUrlAllowed } from "@/scanner/http";
 
 export const maxDuration = 120;
 
-export async function POST(request: NextRequest) {
-  let body: { url?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  const url = body.url?.trim();
+export async function GET(request: NextRequest) {
+  const url = request.nextUrl.searchParams.get("url")?.trim();
   if (!url) {
     return NextResponse.json({ error: "URL is required" }, { status: 400 });
   }
@@ -25,7 +18,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await scan(url);
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: {
+        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=60",
+      },
+    });
   } catch (err) {
     console.error("Scan error:", err);
     return NextResponse.json({ error: "Scan failed" }, { status: 500 });
