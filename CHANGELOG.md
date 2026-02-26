@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.1] - 2026-02-26
+
+### Added
+- Animated WebGL shader background on CTA section (FBM noise with ASCII dithering pattern)
+- Shader reveals on button hover with 500ms opacity fade; text transitions to white
+- Pure WebGL canvas (no three.js dependency) with prefers-reduced-motion support
+
 ## [0.4.0] - 2026-02-22
 
 ### Added
