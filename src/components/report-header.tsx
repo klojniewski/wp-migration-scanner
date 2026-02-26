@@ -77,12 +77,12 @@ export function ReportHeader({ data }: ReportHeaderProps) {
   return (
     <header className="pt-10 pb-0 border-b border-[var(--border)]">
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2 text-[13px] font-semibold tracking-[0.08em] uppercase text-[var(--report-text-secondary)]">
+        <a href="/" className="flex items-center gap-2 text-[13px] font-semibold tracking-[0.08em] uppercase text-[var(--report-text-secondary)] no-underline hover:text-[var(--report-text)] transition-colors">
           <div className="w-6 h-6 bg-[var(--report-accent)] rounded-[5px] flex items-center justify-center text-[12px] font-bold text-white">
             P
           </div>
           WordPress Migration Scanner
-        </div>
+        </a>
         <div className="text-[12px] text-[var(--report-text-muted)] font-mono">
           Scanned {dateStr} · {timeStr}
         </div>
