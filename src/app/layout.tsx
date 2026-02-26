@@ -16,6 +16,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "WordPress Migration Scanner",
   description: "Scan any WordPress site to discover content types, taxonomies, and URL structure before migration.",
+  icons: {
+    icon: "/favicon-96x96.png",
+  },
 };
 
 export default function RootLayout({
