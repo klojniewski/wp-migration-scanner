@@ -75,7 +75,7 @@ describe("generateAnnotations", () => {
           slug: "customer-story-new",
           count: 4,
           isEstimate: false,
-          samples: ["Test post 5", "Test post 4"],
+          samples: [{ title: "Test post 5" }, { title: "Test post 4" }],
           taxonomies: [],
           complexity: null,
         },

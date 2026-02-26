@@ -44,11 +44,11 @@ export function buildFallbackContentTypes(
   }
 
   for (const group of sitemapGroups) {
-    let samples: string[] = [];
+    let samples: { title: string; url?: string }[] = [];
     const taxonomies: TaxonomyRef[] = [];
 
     if (group.pattern === "blog" || group.pattern === "(pages)") {
-      samples = rssItems.slice(0, 5).map((item) => item.title).filter(Boolean);
+      samples = rssItems.slice(0, 5).filter((item) => item.title).map((item) => ({ title: item.title, url: item.link || undefined }));
       if (allCategories.size > 0) {
         taxonomies.push({
           name: "Categories",
@@ -64,11 +64,12 @@ export function buildFallbackContentTypes(
         try {
           const path = new URL(url).pathname;
           const lastSegment = path.split("/").filter(Boolean).pop() || "";
-          return titleCase(lastSegment);
+          const title = titleCase(lastSegment);
+          return title ? { title, url } : null;
         } catch {
-          return "";
+          return null;
         }
-      }).filter(Boolean);
+      }).filter((s): s is { title: string; url: string } => s != null);
     }
 
     contentTypes.push({

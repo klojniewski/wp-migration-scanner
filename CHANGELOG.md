@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] - 2026-02-26
+
+### Added
+- Clickable sample URLs in content types table — links open the actual WordPress post
+- Info tooltips on all stats row metrics explaining data sources (REST API vs sitemap)
+- Clickable example URLs in URL structure table
+- RSS parser now extracts post links for URL mapping
+
+### Changed
+- Samples type changed from `string[]` to `{ title: string; url?: string }[]` across scanner and components
+- Scan limitations section reformatted into structured bullet list
+- Content relationships chart: larger inline nodes and fonts for better readability
+- Languages stat shows "1 Language" instead of dash when no multilingual structure detected
+
 ## [0.4.1] - 2026-02-26
 
 ### Added

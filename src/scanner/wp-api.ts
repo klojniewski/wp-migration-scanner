@@ -53,6 +53,7 @@ export function parseTaxonomiesResponse(json: Record<string, WpTaxonomy>): WpTax
 
 interface WpPostJson {
   title: { rendered: string };
+  link?: string;
   content?: { rendered: string };
   acf?: Record<string, unknown>;
   meta?: Record<string, unknown>;
@@ -62,11 +63,14 @@ interface WpPostJson {
 export function parseContentItems(
   json: WpPostJson[],
   totalHeader: string | null,
-): { count: number; samples: string[]; contentItems: WpContentItem[] } {
+): { count: number; samples: { title: string; url?: string }[]; contentItems: WpContentItem[] } {
   const count = parseInt(totalHeader || "0", 10);
   const samples = json
-    .map((item) => decodeHtmlEntities(item.title?.rendered || ""))
-    .filter(Boolean)
+    .map((item) => {
+      const title = decodeHtmlEntities(item.title?.rendered || "");
+      return title ? { title, url: item.link || undefined } : null;
+    })
+    .filter((s) => s != null)
     .slice(0, 5);
   const contentItems: WpContentItem[] = json.map((item) => ({
     contentHtml: item.content?.rendered || "",

@@ -44,7 +44,7 @@ export function formatReport(result: ScanResult): string {
 
     if (ct.samples.length > 0) {
       const sampleList = ct.samples
-        .map((s) => `"${s}"`)
+        .map((s) => `"${s.title}"`)
         .join(", ");
       lines.push(`  Samples: ${sampleList}`);
     }

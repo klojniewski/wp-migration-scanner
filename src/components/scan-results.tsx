@@ -75,7 +75,7 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
           {/* URL Structure + annotations */}
           {data.urlStructure && (
             <>
-              <UrlStructureCard urlStructure={data.urlStructure} />
+              <UrlStructureCard urlStructure={data.urlStructure} baseUrl={data.url} />
               <AnnotationBlock annotations={filterBySection(annotations, "url-structure")} />
             </>
           )}

@@ -3,6 +3,7 @@ import { type Fetcher, fetchXml } from "./http";
 
 export interface RssItem {
   title: string;
+  link: string;
   categories: string[];
 }
 
@@ -24,6 +25,7 @@ export function parseRssXml(xml: string): RssItem[] {
 
   return itemArray.map((item: Record<string, unknown>) => {
     const title = typeof item["title"] === "string" ? item["title"] : "";
+    const link = typeof item["link"] === "string" ? item["link"] : "";
 
     let categories: string[] = [];
     const rawCats = item["category"];
@@ -35,7 +37,7 @@ export function parseRssXml(xml: string): RssItem[] {
       ).filter(Boolean);
     }
 
-    return { title, categories };
+    return { title, link, categories };
   });
 }
 

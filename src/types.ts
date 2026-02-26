@@ -18,7 +18,7 @@ export interface ContentType {
   slug: string;
   count: number;
   isEstimate: boolean;
-  samples: string[];
+  samples: { title: string; url?: string }[];
   taxonomies: TaxonomyRef[];
   complexity: ContentComplexity | null;
 }

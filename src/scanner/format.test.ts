@@ -47,7 +47,7 @@ describe("formatReport", () => {
           slug: "post",
           count: 42,
           isEstimate: false,
-          samples: ["Hello World"],
+          samples: [{ title: "Hello World" }],
           taxonomies: [],
           complexity: null,
         },

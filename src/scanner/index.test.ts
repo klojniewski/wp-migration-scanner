@@ -27,11 +27,14 @@ describe("buildFallbackContentTypes", () => {
       { pattern: "blog", urls: [`${BASE}/blog/a/`, `${BASE}/blog/b/`] },
     ];
     const rssItems: RssItem[] = [
-      { title: "First Post", categories: ["News"] },
-      { title: "Second Post", categories: ["Tech"] },
+      { title: "First Post", link: `${BASE}/blog/a/`, categories: ["News"] },
+      { title: "Second Post", link: `${BASE}/blog/b/`, categories: ["Tech"] },
     ];
     const result = buildFallbackContentTypes(groups, rssItems, BASE);
-    expect(result[0].samples).toEqual(["First Post", "Second Post"]);
+    expect(result[0].samples).toEqual([
+      { title: "First Post", url: `${BASE}/blog/a/` },
+      { title: "Second Post", url: `${BASE}/blog/b/` },
+    ]);
   });
 
   it("attaches RSS categories as taxonomy for blog pattern", () => {
@@ -39,7 +42,7 @@ describe("buildFallbackContentTypes", () => {
       { pattern: "blog", urls: [`${BASE}/blog/a/`] },
     ];
     const rssItems: RssItem[] = [
-      { title: "Post", categories: ["News", "Tech"] },
+      { title: "Post", link: `${BASE}/blog/a/`, categories: ["News", "Tech"] },
     ];
     const result = buildFallbackContentTypes(groups, rssItems, BASE);
     expect(result[0].taxonomies).toHaveLength(1);
@@ -53,10 +56,10 @@ describe("buildFallbackContentTypes", () => {
       { pattern: "(pages)", urls: [`${BASE}/about/`] },
     ];
     const rssItems: RssItem[] = [
-      { title: "Welcome", categories: ["Uncategorized"] },
+      { title: "Welcome", link: `${BASE}/about/`, categories: ["Uncategorized"] },
     ];
     const result = buildFallbackContentTypes(groups, rssItems, BASE);
-    expect(result[0].samples).toEqual(["Welcome"]);
+    expect(result[0].samples).toEqual([{ title: "Welcome", url: `${BASE}/about/` }]);
     expect(result[0].taxonomies).toHaveLength(1);
   });
 
@@ -71,7 +74,10 @@ describe("buildFallbackContentTypes", () => {
       },
     ];
     const result = buildFallbackContentTypes(groups, [], BASE);
-    expect(result[0].samples).toEqual(["Web Design", "Seo Marketing"]);
+    expect(result[0].samples).toEqual([
+      { title: "Web Design", url: `${BASE}/services/web-design/` },
+      { title: "Seo Marketing", url: `${BASE}/services/seo-marketing/` },
+    ]);
     expect(result[0].taxonomies).toEqual([]);
   });
 
@@ -81,6 +87,7 @@ describe("buildFallbackContentTypes", () => {
     ];
     const rssItems: RssItem[] = Array.from({ length: 10 }, (_, i) => ({
       title: `Post ${i}`,
+      link: `${BASE}/blog/post-${i}/`,
       categories: [],
     }));
     const result = buildFallbackContentTypes(groups, rssItems, BASE);
@@ -97,8 +104,8 @@ describe("buildFallbackContentTypes", () => {
       { pattern: "blog", urls: [`${BASE}/blog/a/`] },
     ];
     const rssItems: RssItem[] = [
-      { title: "A", categories: ["News", "Tech"] },
-      { title: "B", categories: ["News", "Sports"] },
+      { title: "A", link: `${BASE}/blog/a/`, categories: ["News", "Tech"] },
+      { title: "B", link: `${BASE}/blog/b/`, categories: ["News", "Sports"] },
     ];
     const result = buildFallbackContentTypes(groups, rssItems, BASE);
     expect(result[0].taxonomies[0].count).toBe(3); // News, Tech, Sports

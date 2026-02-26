@@ -73,7 +73,10 @@ describe("parseContentItems", () => {
     ];
     const { count, samples } = parseContentItems(json as any, "42");
     expect(count).toBe(42);
-    expect(samples).toEqual(["Hello World", "Second Post"]);
+    expect(samples).toEqual([
+      { title: "Hello World", url: undefined },
+      { title: "Second Post", url: undefined },
+    ]);
   });
 
   it("decodes HTML entities in titles", () => {
@@ -82,8 +85,8 @@ describe("parseContentItems", () => {
       { title: { rendered: "&quot;Quoted&quot;" } },
     ];
     const { samples } = parseContentItems(json as any, "2");
-    expect(samples[0]).toBe("Tom & Jerry");
-    expect(samples[1]).toBe('"Quoted"');
+    expect(samples[0].title).toBe("Tom & Jerry");
+    expect(samples[1].title).toBe('"Quoted"');
   });
 
   it("limits samples to 5", () => {
@@ -106,6 +109,9 @@ describe("parseContentItems", () => {
       { title: { rendered: "Another Good" } },
     ];
     const { samples } = parseContentItems(json as any, "3");
-    expect(samples).toEqual(["Good Title", "Another Good"]);
+    expect(samples).toEqual([
+      { title: "Good Title", url: undefined },
+      { title: "Another Good", url: undefined },
+    ]);
   });
 });

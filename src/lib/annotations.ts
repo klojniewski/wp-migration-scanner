@@ -43,7 +43,7 @@ function complexTaxonomySchema(data: ScanResult): Annotation | null {
 /** Rule 3: "test" in sample titles → work-in-progress flag */
 function testContentWarning(data: ScanResult): Annotation | null {
   const withTest = data.contentTypes.filter((ct) =>
-    ct.samples.some((s) => /\btest\b/i.test(s))
+    ct.samples.some((s) => /\btest\b/i.test(s.title))
   );
   if (withTest.length === 0) return null;
 

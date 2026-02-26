@@ -45,22 +45,22 @@ function truncate(text: string, max: number): string {
 }
 
 function layoutFor(mode: "inline" | "full") {
-  const NODE_H = mode === "full" ? 28 : 22;
-  const NODE_GAP = mode === "full" ? 5 : 3;
-  const LEFT_W = mode === "full" ? 200 : 130;
-  const RIGHT_W = mode === "full" ? 180 : 120;
+  const NODE_H = mode === "full" ? 28 : 28;
+  const NODE_GAP = mode === "full" ? 5 : 6;
+  const LEFT_W = mode === "full" ? 200 : 150;
+  const RIGHT_W = mode === "full" ? 180 : 140;
   const SVG_W = mode === "full" ? 700 : 420;
   const RIGHT_X = SVG_W - RIGHT_W;
-  const PAD_TOP = mode === "full" ? 10 : 6;
-  const FONT = mode === "full" ? 11 : 9;
-  const FONT_COUNT = mode === "full" ? 9 : 7.5;
-  const TEXT_X = mode === "full" ? 12 : 8;
-  const TEXT_Y = mode === "full" ? 18 : 15;
-  const ACCENT_W = mode === "full" ? 3 : 2;
-  const ACCENT_PAD = mode === "full" ? 6 : 5;
-  const RX = mode === "full" ? 4 : 3;
-  const TRUNC_L = mode === "full" ? 18 : 13;
-  const TRUNC_R = mode === "full" ? 16 : 12;
+  const PAD_TOP = mode === "full" ? 10 : 10;
+  const FONT = mode === "full" ? 11 : 10;
+  const FONT_COUNT = mode === "full" ? 9 : 8;
+  const TEXT_X = mode === "full" ? 12 : 10;
+  const TEXT_Y = mode === "full" ? 18 : 18;
+  const ACCENT_W = mode === "full" ? 3 : 3;
+  const ACCENT_PAD = mode === "full" ? 6 : 6;
+  const RX = mode === "full" ? 4 : 4;
+  const TRUNC_L = mode === "full" ? 18 : 14;
+  const TRUNC_R = mode === "full" ? 16 : 13;
   return { NODE_H, NODE_GAP, LEFT_W, RIGHT_W, SVG_W, RIGHT_X, PAD_TOP, FONT, FONT_COUNT, TEXT_X, TEXT_Y, ACCENT_W, ACCENT_PAD, RX, TRUNC_L, TRUNC_R };
 }
 

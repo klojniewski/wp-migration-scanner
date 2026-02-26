@@ -4,9 +4,10 @@ import type { UrlStructure } from "@/types";
 
 interface UrlStructureCardProps {
   urlStructure: UrlStructure;
+  baseUrl: string;
 }
 
-export function UrlStructureCard({ urlStructure }: UrlStructureCardProps) {
+export function UrlStructureCard({ urlStructure, baseUrl }: UrlStructureCardProps) {
   return (
     <section className="py-10 border-b border-[var(--border)]">
       <div className="flex items-baseline justify-between mb-2">
@@ -53,9 +54,14 @@ export function UrlStructureCard({ urlStructure }: UrlStructureCardProps) {
                   <td
                     className={`py-2 px-4 align-middle ${i < urlStructure.patterns.length - 1 ? "border-b border-[var(--border)]" : ""}`}
                   >
-                    <span className="font-mono text-[11px] text-[var(--report-text-muted)] max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap block">
+                    <a
+                      href={`${baseUrl}${p.example}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[11px] text-[var(--report-text-muted)] hover:text-[var(--report-blue)] max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap block transition-colors"
+                    >
                       {p.example}
-                    </span>
+                    </a>
                   </td>
                   <td
                     className={`py-2 px-4 text-right font-mono font-medium text-[var(--report-text)] align-middle ${i < urlStructure.patterns.length - 1 ? "border-b border-[var(--border)]" : ""}`}

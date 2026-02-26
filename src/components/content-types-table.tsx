@@ -223,7 +223,18 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
                             key={j}
                             className="py-px whitespace-nowrap overflow-hidden text-ellipsis max-w-[220px]"
                           >
-                            {s}
+                            {s.url ? (
+                              <a
+                                href={s.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-[var(--report-blue)] transition-colors"
+                              >
+                                {s.title}
+                              </a>
+                            ) : (
+                              s.title
+                            )}
                           </li>
                         ))}
                       </ul>
