@@ -95,6 +95,44 @@ describe("analyzeUrls", () => {
     expect(result.multilingual!.languages).toContain("fr");
   });
 
+  it("detects locale-region prefixes (en-us, de-de, nl-nl)", () => {
+    const urls = [
+      `${BASE}/en-us/storage-prices-miami/`,
+      `${BASE}/en-us/self-storage-bronx/`,
+      `${BASE}/de-de/moebel-einlagern-koeln/`,
+      `${BASE}/de-de/self-storage-duisburg/`,
+      `${BASE}/nl-nl/opslag-haarlem/`,
+      `${BASE}/nl-nl/self-storage-hengelo/`,
+      `${BASE}/es-us/self-storage-bronx/`,
+      `${BASE}/es-us/sobre-nosotras/`,
+    ];
+    const result = analyzeUrls(BASE, urls);
+    expect(result.multilingual).not.toBeNull();
+    expect(result.multilingual!.type).toBe("subdirectory");
+    expect(result.multilingual!.languages).toEqual([
+      "de-de",
+      "en-us",
+      "es-us",
+      "nl-nl",
+    ]);
+  });
+
+  it("drops stray single-URL locale prefixes on large locale-based sites", () => {
+    const urls: string[] = [];
+    // Real locales used at scale
+    for (let i = 0; i < 20; i++) {
+      urls.push(`${BASE}/en-us/page-${i}/`);
+      urls.push(`${BASE}/de-de/page-${i}/`);
+    }
+    // Stray single PDFs under bare language dirs — noise, should be dropped
+    urls.push(`${BASE}/en/terms.pdf`);
+    urls.push(`${BASE}/de/agb.pdf`);
+    urls.push(`${BASE}/nl/voorwaarden.pdf`);
+    const result = analyzeUrls(BASE, urls);
+    expect(result.multilingual).not.toBeNull();
+    expect(result.multilingual!.languages).toEqual(["de-de", "en-us"]);
+  });
+
   it("does not flag single language prefix as multilingual", () => {
     const urls = [
       `${BASE}/en/about/`,

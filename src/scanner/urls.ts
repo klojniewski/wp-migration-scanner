@@ -1,12 +1,45 @@
 import type { UrlStructure, UrlPattern, MultilingualInfo } from "../types";
 
-// Common language codes for subdirectory detection
-const LANG_CODES = new Set([
+// ISO 639-1 language codes (2-letter) used as the base for locale detection.
+// Region/script suffixes (e.g. "en-us", "de-de", "zh-hans") are matched
+// generically against these, so we don't need to enumerate every locale.
+const LANGUAGE_CODES = new Set([
   "en", "de", "fr", "es", "it", "pt", "nl", "pl", "sv", "da", "no", "fi",
   "cs", "sk", "hu", "ro", "bg", "hr", "sl", "sr", "uk", "ru", "ja", "zh",
   "ko", "ar", "he", "th", "vi", "id", "ms", "tr", "el", "ca", "eu", "gl",
-  "pt-br", "zh-hans", "zh-hant", "en-us", "en-gb", "fr-ca", "es-mx",
+  "nb", "nn", "et", "lv", "lt", "is", "ga", "mt", "sq", "mk", "be", "ka",
+  "hi", "bn", "ta", "te", "ml", "kn", "mr", "gu", "pa", "ur", "fa", "af",
+  "hy", "az", "kk", "uz", "cy", "lb", "fo", "km", "lo", "my", "si", "ne",
 ]);
+
+/**
+ * Returns a normalized locale string when `segment` looks like a language or
+ * language-region/script code (e.g. "en", "en-us", "de-de", "zh-hans"), or
+ * null otherwise. The leading two letters must be a known language code.
+ */
+function parseLocaleSegment(segment: string): string | null {
+  const s = segment.toLowerCase();
+  const match = /^([a-z]{2})(?:-([a-z]{2,4}))?$/.exec(s);
+  if (!match) return null;
+  if (!LANGUAGE_CODES.has(match[1])) return null;
+  return s;
+}
+
+/**
+ * Given counts of recognized locale segments, drops stray matches that are
+ * almost certainly noise (e.g. a lone PDF under /en/) once the site clearly
+ * uses locale prefixes at scale. Small sites keep every match.
+ */
+function filterSignificantLocales(counts: Map<string, number>): string[] {
+  const maxCount = Math.max(...counts.values());
+  // Only apply a minimum threshold once some locale is used at scale; this
+  // keeps tiny multilingual sites (1 page per language) working.
+  const minCount = maxCount > 2 ? 2 : 1;
+  return Array.from(counts.entries())
+    .filter(([, count]) => count >= minCount)
+    .map(([lang]) => lang)
+    .sort();
+}
 
 export function analyzeUrls(baseUrl: string, allUrls: string[]): UrlStructure {
   const baseHost = new URL(baseUrl).origin;
@@ -80,8 +113,9 @@ function detectMultilingual(baseHost: string, urls: string[]): MultilingualInfo 
       if (parsed.origin !== baseHost) continue;
 
       const firstPart = parsed.pathname.split("/").filter(Boolean)[0];
-      if (firstPart && LANG_CODES.has(firstPart.toLowerCase())) {
-        const lang = firstPart.toLowerCase();
+      if (!firstPart) continue;
+      const lang = parseLocaleSegment(firstPart);
+      if (lang) {
         firstSegments.set(lang, (firstSegments.get(lang) || 0) + 1);
       }
     } catch {
@@ -91,10 +125,13 @@ function detectMultilingual(baseHost: string, urls: string[]): MultilingualInfo 
 
   // Need at least 2 different language prefixes to consider it multilingual
   if (firstSegments.size >= 2) {
-    return {
-      type: "subdirectory",
-      languages: Array.from(firstSegments.keys()).sort(),
-    };
+    const languages = filterSignificantLocales(firstSegments);
+    if (languages.length >= 2) {
+      return {
+        type: "subdirectory",
+        languages,
+      };
+    }
   }
 
   // Strategy 2: Check for language subdomains
@@ -107,8 +144,9 @@ function detectMultilingual(baseHost: string, urls: string[]): MultilingualInfo 
       const hostname = new URL(url).hostname;
       if (hostname !== baseDomain && hostname.endsWith(baseDomain)) {
         const sub = hostname.replace(`.${baseDomain}`, "");
-        if (LANG_CODES.has(sub.toLowerCase())) {
-          subdomains.add(sub.toLowerCase());
+        const lang = parseLocaleSegment(sub);
+        if (lang) {
+          subdomains.add(lang);
         }
       }
     } catch {

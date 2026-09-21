@@ -54,7 +54,11 @@ function buildMatrix(
       const counts = areaMap.get(areaName) ?? new Map<string, number>();
       counts.set(langMatch, (counts.get(langMatch) ?? 0) + p.count);
       areaMap.set(areaName, counts);
-    } else {
+    } else if (languages.includes("en")) {
+      // English-default model: unprefixed URLs belong to the "en" column.
+      // When "en" is not itself a detected language (every locale carries a
+      // prefix), these are shared/non-localized URLs and are skipped so they
+      // don't vanish into a column that is never rendered.
       const areaName = inferAreaName(p.pattern, p.pattern);
       const counts = areaMap.get(areaName) ?? new Map<string, number>();
       counts.set("en", (counts.get("en") ?? 0) + p.count);
