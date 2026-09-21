@@ -61,8 +61,17 @@ function buildMatrix(data: ScanResult): { languages: string[]; rows: LanguageRow
     }
   }
 
+  const langSet = new Set(languages);
+
   const rows: LanguageRow[] = Array.from(areaMap.entries())
     .map(([area, counts]) => ({ area, counts }))
+    // Drop rows that have no count for any displayed language column.
+    // These come from stray directories (e.g. single-URL PDF folders like
+    // /de/, /en/, /nl/) that were correctly excluded from the detected
+    // locales but still appear in the raw pattern list.
+    .filter((row) =>
+      Array.from(row.counts.entries()).some(([lang, count]) => count > 0 && langSet.has(lang))
+    )
     .sort((a, b) => {
       const totalA = Array.from(a.counts.values()).reduce((s, c) => s + c, 0);
       const totalB = Array.from(b.counts.values()).reduce((s, c) => s + c, 0);
