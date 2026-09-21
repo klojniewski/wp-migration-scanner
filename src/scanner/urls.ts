@@ -38,8 +38,14 @@ function matchLocaleSegment(segment: string): string | null {
 
 export function analyzeUrls(baseUrl: string, allUrls: string[]): UrlStructure {
   const baseHost = new URL(baseUrl).origin;
-  const patterns = derivePatterns(baseHost, allUrls);
   const multilingual = detectMultilingual(baseHost, allUrls);
+  // Confirmed subdirectory locales are stripped before pattern derivation so
+  // the pattern reflects the content type (blog, magazine, services…) rather
+  // than the language. Monolingual sites yield an empty set → no stripping.
+  const localePrefixes = new Set(
+    multilingual?.type === "subdirectory" ? multilingual.languages : []
+  );
+  const patterns = derivePatterns(baseHost, allUrls, localePrefixes);
 
   return {
     totalIndexedUrls: allUrls.length,
@@ -48,11 +54,20 @@ export function analyzeUrls(baseUrl: string, allUrls: string[]): UrlStructure {
   };
 }
 
-function derivePatterns(baseHost: string, urls: string[]): UrlPattern[] {
+function derivePatterns(
+  baseHost: string,
+  urls: string[],
+  locales: Set<string>
+): UrlPattern[] {
   // Group by path depth and first segment to find patterns
   // e.g. /blog/post-slug/ → "/blog/{slug}/"
   //      /case-studies/acme/ → "/case-studies/{slug}/"
   //      /about/ → "/{page}/"
+  //
+  // On multilingual sites the first segment is the locale, which would collapse
+  // every content type into a single "/{locale}/{slug}/" pattern. We strip a
+  // *confirmed* locale prefix, derive the pattern from the remaining content
+  // path, then re-add the locale so per-language attribution still works.
 
   const patternMap = new Map<string, { count: number; example: string }>();
 
@@ -61,20 +76,31 @@ function derivePatterns(baseHost: string, urls: string[]): UrlPattern[] {
       const parsed = new URL(url);
       if (parsed.origin !== baseHost) continue;
 
-      const pathParts = parsed.pathname.split("/").filter(Boolean);
-      if (pathParts.length === 0) continue;
+      const rawParts = parsed.pathname.split("/").filter(Boolean);
+      if (rawParts.length === 0) continue;
+
+      let prefix = "";
+      let parts = rawParts;
+      const maybeLocale = matchLocaleSegment(rawParts[0]);
+      if (maybeLocale && locales.has(maybeLocale)) {
+        prefix = `/${maybeLocale}`;
+        parts = rawParts.slice(1);
+      }
 
       let pattern: string;
 
-      if (pathParts.length === 1) {
-        // Top-level page: /about/, /contact/
-        pattern = "/{page}/";
-      } else if (pathParts.length === 2) {
-        // Two-level: /blog/my-post/ or /services/consulting/
-        pattern = `/${pathParts[0]}/{slug}/`;
+      if (parts.length === 0) {
+        // Locale landing page: /en-us/
+        pattern = `${prefix}/`;
+      } else if (parts.length === 1) {
+        // Top-level page: /about/, /en-us/pricing/
+        pattern = `${prefix}/{page}/`;
+      } else if (parts.length === 2) {
+        // Two-level: /blog/my-post/ or /en-us/magazine/some-post/
+        pattern = `${prefix}/${parts[0]}/{slug}/`;
       } else {
         // Deeper: /blog/2024/01/my-post/ → /blog/{...}/
-        pattern = `/${pathParts[0]}/{...}/`;
+        pattern = `${prefix}/${parts[0]}/{...}/`;
       }
 
       const existing = patternMap.get(pattern);

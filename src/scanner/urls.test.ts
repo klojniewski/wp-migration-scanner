@@ -138,6 +138,27 @@ describe("analyzeUrls", () => {
     expect(result.multilingual!.languages).not.toContain("nl");
   });
 
+  it("splits content types under a locale prefix instead of collapsing them", () => {
+    const urls = [
+      `${BASE}/en-us/about/`,
+      `${BASE}/en-us/pricing/`,
+      `${BASE}/en-us/magazine/post-a/`,
+      `${BASE}/en-us/magazine/post-b/`,
+      `${BASE}/de-de/ueber-uns/`,
+      `${BASE}/de-de/magazine/beitrag/`,
+    ];
+    const result = analyzeUrls(BASE, urls);
+
+    // Top-level localized pages stay separate from the magazine section.
+    expect(result.patterns.find((p) => p.pattern === "/en-us/{page}/")?.count).toBe(2);
+    expect(
+      result.patterns.find((p) => p.pattern === "/en-us/magazine/{slug}/")?.count
+    ).toBe(2);
+    expect(
+      result.patterns.find((p) => p.pattern === "/de-de/magazine/{slug}/")?.count
+    ).toBe(1);
+  });
+
   it("does not treat non-language segments as locales", () => {
     const urls = [
       `${BASE}/go/checkout/`,
