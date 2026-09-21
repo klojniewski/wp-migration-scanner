@@ -105,6 +105,50 @@ describe("analyzeUrls", () => {
     expect(result.multilingual).toBeNull();
   });
 
+  it("detects region locales like de-de and en-nl (not just bare codes)", () => {
+    const urls = [
+      `${BASE}/en-us/storage-prices-miami/`,
+      `${BASE}/en-nl/self-storage-hengelo/`,
+      `${BASE}/de-de/moebel-einlagern-koeln/`,
+      `${BASE}/nl-nl/opslag-haarlem/`,
+      `${BASE}/es-us/self-storage-bronx/`,
+    ];
+    const result = analyzeUrls(BASE, urls);
+    expect(result.multilingual).not.toBeNull();
+    expect(result.multilingual!.languages).toEqual([
+      "de-de",
+      "en-nl",
+      "en-us",
+      "es-us",
+      "nl-nl",
+    ]);
+  });
+
+  it("ignores stray single-URL language folders next to large locales", () => {
+    const urls = [
+      ...Array.from({ length: 190 }, (_, i) => `${BASE}/en-us/page-${i}/`),
+      ...Array.from({ length: 150 }, (_, i) => `${BASE}/de-de/seite-${i}/`),
+      // Noise: a couple of bare-language PDF folders with a single file each
+      `${BASE}/de/agb.pdf`,
+      `${BASE}/nl/voorwaarden.pdf`,
+    ];
+    const result = analyzeUrls(BASE, urls);
+    expect(result.multilingual!.languages).toEqual(["de-de", "en-us"]);
+    expect(result.multilingual!.languages).not.toContain("de");
+    expect(result.multilingual!.languages).not.toContain("nl");
+  });
+
+  it("does not treat non-language segments as locales", () => {
+    const urls = [
+      `${BASE}/go/checkout/`,
+      `${BASE}/us/pricing/`,
+      `${BASE}/hi/there/`,
+    ];
+    const result = analyzeUrls(BASE, urls);
+    // "go" and "us" are not ISO 639-1 languages; "hi" is but appears only once
+    expect(result.multilingual).toBeNull();
+  });
+
   it("handles empty URL list", () => {
     const result = analyzeUrls(BASE, []);
     expect(result.totalIndexedUrls).toBe(0);
