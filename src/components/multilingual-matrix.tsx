@@ -34,59 +34,89 @@ function buildMatrix(data: ScanResult): { languages: string[]; rows: LanguageRow
 
   const languages = ml.languages;
   const patterns = data.urlStructure!.patterns;
-  const nonEnLangs = languages.filter((l) => l !== "en");
+  const langSet = new Set(languages);
 
-  // Group patterns by content area
+  // A language is "prefixed" when it appears as a URL path prefix. Any language
+  // that never appears as a prefix is the site's default served at the root
+  // (e.g. English at "/"), so non-prefixed patterns are attributed to it.
+  const prefixed = new Set<string>();
+  for (const p of patterns) {
+    for (const lang of languages) {
+      if (p.pattern === `/${lang}/` || p.pattern.startsWith(`/${lang}/`)) {
+        prefixed.add(lang);
+      }
+    }
+  }
+  const defaultLang = languages.find((l) => !prefixed.has(l));
+
+  // Group patterns by content area (blog, magazine, services, pages…), keyed by
+  // the first content segment after the locale prefix.
   const areaMap = new Map<string, Map<string, number>>();
 
   for (const p of patterns) {
-    // Check if this is a language-prefixed pattern
-    const langMatch = nonEnLangs.find(
-      (lang) => p.pattern.startsWith(`/${lang}/`) || p.pattern === `/${lang}/{slug}/`
-    );
+    // Longest matching locale prefix, so "en" can't shadow "en-us".
+    const lang = languages
+      .filter((l) => p.pattern === `/${l}/` || p.pattern.startsWith(`/${l}/`))
+      .sort((a, b) => b.length - a.length)[0];
 
-    if (langMatch) {
-      // This is a translated pattern — extract the base area
-      const basePart = p.pattern.replace(`/${langMatch}/`, "/").replace(/\{[^}]+\}/g, "*");
-      const areaName = inferAreaName(basePart, p.pattern);
-      const counts = areaMap.get(areaName) ?? new Map<string, number>();
-      counts.set(langMatch, (counts.get(langMatch) ?? 0) + p.count);
-      areaMap.set(areaName, counts);
-    } else {
-      // English pattern
-      const areaName = inferAreaName(p.pattern, p.pattern);
-      const counts = areaMap.get(areaName) ?? new Map<string, number>();
-      counts.set("en", (counts.get("en") ?? 0) + p.count);
-      areaMap.set(areaName, counts);
+    const attributed = lang ?? defaultLang;
+    if (!attributed) continue; // non-localized pattern with no default → skip
+
+    const basePart = (lang ? p.pattern.replace(`/${lang}/`, "/") : p.pattern).replace(
+      /\{[^}]+\}/g,
+      "*"
+    );
+    const areaName = inferAreaName(basePart);
+
+    const counts = areaMap.get(areaName) ?? new Map<string, number>();
+    counts.set(attributed, (counts.get(attributed) ?? 0) + p.count);
+    areaMap.set(areaName, counts);
+  }
+
+  const total = (counts: Map<string, number>) =>
+    Array.from(counts.values()).reduce((s, c) => s + c, 0);
+
+  const localesCovered = (counts: Map<string, number>) =>
+    Array.from(counts.entries()).filter(([lang, c]) => c > 0 && langSet.has(lang)).length;
+
+  // A segment is a genuine cross-language content type (e.g. a "/magazine/" or
+  // "/blog/" section that uses the same slug in every locale) only when it
+  // spans a strong majority of locales. Sites often localize section slugs
+  // (rent-storage / lagerraum-mieten / opslagruimte-huren all mean the same
+  // thing), so those one-off segments are folded into the top-level Pages
+  // bucket instead of cluttering the matrix with single-language rows.
+  const PAGES = "Pages";
+  const minLocales = Math.max(2, Math.ceil(languages.length * 0.6));
+  const pagesCounts = areaMap.get(PAGES) ?? new Map<string, number>();
+
+  for (const [area, counts] of Array.from(areaMap.entries())) {
+    if (area === PAGES) continue;
+    if (localesCovered(counts) < minLocales) {
+      for (const [lang, c] of counts) {
+        pagesCounts.set(lang, (pagesCounts.get(lang) ?? 0) + c);
+      }
+      areaMap.delete(area);
     }
   }
+  if (pagesCounts.size > 0) areaMap.set(PAGES, pagesCounts);
 
   const rows: LanguageRow[] = Array.from(areaMap.entries())
     .map(([area, counts]) => ({ area, counts }))
-    .sort((a, b) => {
-      const totalA = Array.from(a.counts.values()).reduce((s, c) => s + c, 0);
-      const totalB = Array.from(b.counts.values()).reduce((s, c) => s + c, 0);
-      return totalB - totalA;
-    });
+    .filter((row) => localesCovered(row.counts) > 0)
+    .sort((a, b) => total(b.counts) - total(a.counts));
 
   return { languages, rows };
 }
 
-function inferAreaName(basePart: string, original: string): string {
-  // Simple heuristic: use the first path segment
-  if (basePart === "/*/" || basePart === "/{page}/") return "Pages & Blog";
-  const segments = basePart.split("/").filter(Boolean);
-  if (segments.length === 0) return "Pages & Blog";
+function inferAreaName(basePart: string): string {
+  // basePart has placeholders normalized to "*", e.g. "/*/", "/magazine/*/", "/".
+  // The first real segment names the content area; a bare path is top-level pages.
+  const segments = basePart.split("/").filter((s) => s && s !== "*");
+  if (segments.length === 0) return "Pages";
 
-  const first = segments[0].replace(/\*/g, "").replace(/\{[^}]+\}/g, "");
-  if (!first) return "Pages & Blog";
-
-  // Check for nested patterns like /{lang}/blog/{slug}/
-  if (original.includes("/blog/")) return "Blog (nested)";
-
-  return first
+  return segments[0]
     .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
     .join(" ");
 }
 
