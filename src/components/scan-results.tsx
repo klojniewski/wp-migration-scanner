@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ScanResult, Annotation, AnnotationSection } from "@/types";
 import { generateAnnotations } from "@/lib/annotations";
 import { generateMigrationScope } from "@/lib/migration-scope";
+import { analyzeAudit, generateFullMigrationScope, type ServerAudit } from "@/lib/server-audit";
+import { AuditUpload } from "@/components/audit-upload";
+import { AuditReportCard } from "@/components/audit-report-card";
 import { ReportHeader } from "@/components/report-header";
 import { FallbackNotice } from "@/components/fallback-notice";
 import { StatsRow } from "@/components/stats-row";
@@ -30,8 +33,14 @@ function filterBySection(annotations: Annotation[], section: AnnotationSection):
 }
 
 export function ScanResults({ data, onReset }: ScanResultsProps) {
+  const [audit, setAudit] = useState<{ file: string; data: ServerAudit } | null>(null);
   const annotations = useMemo(() => generateAnnotations(data), [data]);
-  const scope = useMemo(() => generateMigrationScope(data), [data]);
+  const baseScope = useMemo(() => generateMigrationScope(data), [data]);
+  const analysis = useMemo(() => (audit ? analyzeAudit(data, audit.data) : null), [data, audit]);
+  const scope = useMemo(
+    () => (analysis ? generateFullMigrationScope(data, analysis, baseScope) : baseScope),
+    [data, analysis, baseScope]
+  );
 
   return (
     <div className="min-h-screen">
@@ -39,7 +48,15 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
           <ReportHeader data={data} />
           <FallbackNotice data={data} />
           <StatsRow data={data} />
-          <MigrationScopeCard scope={scope} />
+          <AuditUpload
+            audit={audit}
+            siteHome={analysis?.siteHome ?? null}
+            domainMatches={analysis?.domainMatches ?? true}
+            onLoad={(file, auditData) => setAudit({ file, data: auditData })}
+            onClear={() => setAudit(null)}
+          />
+          <MigrationScopeCard scope={scope} fullAnalysis={analysis != null} />
+          {analysis && <AuditReportCard analysis={analysis} />}
 
           {/* Content Structure + annotations */}
           <ContentTypesTable contentTypes={data.contentTypes} />
