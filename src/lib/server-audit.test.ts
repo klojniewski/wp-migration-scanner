@@ -7,6 +7,7 @@ import {
   AuditParseError,
   analyzeAudit,
   generateFullMigrationScope,
+  mergeAuditContentTypes,
   parseServerAudit,
 } from "./server-audit";
 
@@ -32,6 +33,22 @@ describe("parseServerAudit", () => {
   it("rejects invalid JSON and wrong shape", () => {
     expect(() => parseServerAudit("{nope")).toThrow(AuditParseError);
     expect(() => parseServerAudit('{"foo":1}')).toThrow(AuditParseError);
+  });
+});
+
+describe("mergeAuditContentTypes", () => {
+  it("uses audit counts, keeps scan samples, and adds REST-hidden types", () => {
+    const withSamples: ScanResult = {
+      ...scan,
+      contentTypes: [{ ...scan.contentTypes[0], samples: [{ title: "Hello" }] }],
+    };
+    const merged = mergeAuditContentTypes(withSamples, analyzeAudit(withSamples, parseServerAudit(raw)));
+    const posts = merged.find((c) => c.slug === "posts");
+    expect(posts?.samples).toEqual([{ title: "Hello" }]);
+    expect(posts?.isEstimate).toBe(false);
+    expect(merged.filter((c) => c.slug === "posts")).toHaveLength(1);
+    expect(merged.some((c) => c.slug.startsWith("wp_"))).toBe(false);
+    expect(merged.length).toBeGreaterThanOrEqual(withSamples.contentTypes.length);
   });
 });
 

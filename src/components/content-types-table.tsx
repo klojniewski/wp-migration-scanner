@@ -93,9 +93,10 @@ function TaxonomyBadge({ tax, onOpen }: { tax: TaxonomyRef; onOpen: (tax: Taxono
 
 interface ContentTypesTableProps {
   contentTypes: ContentType[];
+  fromAudit?: boolean;
 }
 
-export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
+export function ContentTypesTable({ contentTypes, fromAudit = false }: ContentTypesTableProps) {
   const [activeTax, setActiveTax] = useState<TaxonomyRef | null>(null);
 
   if (contentTypes.length === 0) return null;
@@ -116,7 +117,9 @@ export function ContentTypesTable({ contentTypes }: ContentTypesTableProps) {
         </span>
       </div>
       <p className="text-[14px] text-[var(--report-text-secondary)] mb-6 max-w-[680px]">
-        Document types detected via REST API with item counts, taxonomy relationships, and migration complexity estimate per type.
+        {fromAudit
+          ? "Document types and item counts from the server-side audit (published + drafts), enriched with samples and taxonomy terms from the REST API scan."
+          : "Document types detected via REST API with item counts, taxonomy relationships, and migration complexity estimate per type."}
       </p>
 
       <div className="overflow-x-auto">

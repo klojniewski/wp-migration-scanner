@@ -1,4 +1,4 @@
-import type { MigrationConsideration, MigrationScope, ScanResult } from "@/types";
+import type { ContentType, MigrationConsideration, MigrationScope, ScanResult, TaxonomyRef } from "@/types";
 
 interface AuditPostType {
   post_type: string;
@@ -209,6 +209,38 @@ function findScanCount(scan: ScanResult, pt: AuditPostType): number | null {
   const candidates = [pt.post_type, pt.rest_base, `${pt.post_type}s`].filter(Boolean) as string[];
   const match = scan.contentTypes.find((ct) => candidates.includes(ct.slug));
   return match ? match.count : null;
+}
+
+/**
+ * Content Structure with the server audit applied. The audit reads the
+ * database directly, so its counts are authoritative and it reveals post types
+ * the REST API hides. Scan-only details (sample titles, taxonomy terms,
+ * complexity) are kept wherever a scan type matches an audit post type.
+ */
+export function mergeAuditContentTypes(scan: ScanResult, analysis: AuditAnalysis): ContentType[] {
+  const used = new Set<string>();
+  const merged: ContentType[] = analysis.content
+    .filter((r) => !r.postType.startsWith("wp_"))
+    .map((row) => {
+      const candidates = [row.postType, `${row.postType}s`];
+      const match = scan.contentTypes.find((ct) => !used.has(ct.slug) && candidates.includes(ct.slug));
+      if (match) used.add(match.slug);
+      const auditTaxonomies: TaxonomyRef[] = analysis.taxonomies
+        .filter((t) => t.appliesTo.includes(row.postType))
+        .map((t) => ({ name: t.name, slug: t.name.toLowerCase(), count: t.terms, terms: [] }));
+      return {
+        name: match?.name ?? row.label,
+        slug: match?.slug ?? row.postType,
+        count: row.published + row.unpublished,
+        isEstimate: false,
+        samples: match?.samples ?? [],
+        taxonomies: match && match.taxonomies.length > 0 ? match.taxonomies : auditTaxonomies,
+        complexity: match?.complexity ?? null,
+      };
+    });
+  // Keep scan types the audit didn't list (e.g. counted differently) so nothing disappears.
+  for (const ct of scan.contentTypes) if (!used.has(ct.slug)) merged.push(ct);
+  return merged;
 }
 
 export function analyzeAudit(scan: ScanResult, audit: ServerAudit): AuditAnalysis {

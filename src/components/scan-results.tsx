@@ -4,7 +4,12 @@ import { useMemo, useState } from "react";
 import type { ScanResult, Annotation, AnnotationSection } from "@/types";
 import { generateAnnotations } from "@/lib/annotations";
 import { generateMigrationScope } from "@/lib/migration-scope";
-import { analyzeAudit, generateFullMigrationScope, type ServerAudit } from "@/lib/server-audit";
+import {
+  analyzeAudit,
+  generateFullMigrationScope,
+  mergeAuditContentTypes,
+  type ServerAudit,
+} from "@/lib/server-audit";
 import { AuditUpload } from "@/components/audit-upload";
 import { AuditReportCard } from "@/components/audit-report-card";
 import { ReportHeader } from "@/components/report-header";
@@ -41,6 +46,10 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
     () => (analysis ? generateFullMigrationScope(data, analysis, baseScope) : baseScope),
     [data, analysis, baseScope]
   );
+  const contentTypes = useMemo(
+    () => (analysis ? mergeAuditContentTypes(data, analysis) : data.contentTypes),
+    [data, analysis]
+  );
 
   return (
     <div className="min-h-screen">
@@ -59,11 +68,11 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
           {analysis && <AuditReportCard analysis={analysis} />}
 
           {/* Content Structure + annotations */}
-          <ContentTypesTable contentTypes={data.contentTypes} />
+          <ContentTypesTable contentTypes={contentTypes} fromAudit={analysis != null} />
           <AnnotationBlock annotations={filterBySection(annotations, "content-types")} />
 
           {/* Content Relationships Diagram */}
-          <ContentRelationshipsCard contentTypes={data.contentTypes} />
+          <ContentRelationshipsCard contentTypes={contentTypes} />
 
           {/* Multilingual Matrix + annotations (conditional) */}
           {data.urlStructure?.multilingual && (

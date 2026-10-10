@@ -1,4 +1,5 @@
 import type { UrlStructure, UrlPattern, MultilingualInfo } from "../types";
+import { type SiteScope, getScope, isInScope, scopedParts } from "./scope";
 
 // ISO 639-1 language codes used to validate the language part of a locale
 // segment. We detect the *pattern* of a locale (e.g. "de-de", "en-nl") rather
@@ -37,15 +38,16 @@ function matchLocaleSegment(segment: string): string | null {
 }
 
 export function analyzeUrls(baseUrl: string, allUrls: string[]): UrlStructure {
-  const baseHost = new URL(baseUrl).origin;
-  const multilingual = detectMultilingual(baseHost, allUrls);
+  const scope = getScope(baseUrl);
+  allUrls = allUrls.filter((u) => isInScope(u, scope));
+  const multilingual = detectMultilingual(scope, allUrls);
   // Confirmed subdirectory locales are stripped before pattern derivation so
   // the pattern reflects the content type (blog, magazine, services…) rather
   // than the language. Monolingual sites yield an empty set → no stripping.
   const localePrefixes = new Set(
     multilingual?.type === "subdirectory" ? multilingual.languages : []
   );
-  const patterns = derivePatterns(baseHost, allUrls, localePrefixes);
+  const patterns = derivePatterns(scope, allUrls, localePrefixes);
 
   return {
     totalIndexedUrls: allUrls.length,
@@ -55,10 +57,13 @@ export function analyzeUrls(baseUrl: string, allUrls: string[]): UrlStructure {
 }
 
 function derivePatterns(
-  baseHost: string,
+  scope: SiteScope,
   urls: string[],
   locales: Set<string>
 ): UrlPattern[] {
+  // Patterns are derived relative to the scope's base path (e.g. /blog) and
+  // re-prefixed with it, so /blog/category/x/ yields /blog/category/{slug}/
+  // instead of collapsing every blog URL into /blog/{...}/.
   // Group by path depth and first segment to find patterns
   // e.g. /blog/post-slug/ → "/blog/{slug}/"
   //      /case-studies/acme/ → "/case-studies/{slug}/"
@@ -74,16 +79,14 @@ function derivePatterns(
   for (const url of urls) {
     try {
       const parsed = new URL(url);
-      if (parsed.origin !== baseHost) continue;
+      const rawParts = scopedParts(url, scope);
+      if (!rawParts || rawParts.length === 0) continue;
 
-      const rawParts = parsed.pathname.split("/").filter(Boolean);
-      if (rawParts.length === 0) continue;
-
-      let prefix = "";
+      let prefix = scope.basePath;
       let parts = rawParts;
       const maybeLocale = matchLocaleSegment(rawParts[0]);
       if (maybeLocale && locales.has(maybeLocale)) {
-        prefix = `/${maybeLocale}`;
+        prefix = `${scope.basePath}/${maybeLocale}`;
         parts = rawParts.slice(1);
       }
 
@@ -123,17 +126,15 @@ function derivePatterns(
     .sort((a, b) => b.count - a.count);
 }
 
-function detectMultilingual(baseHost: string, urls: string[]): MultilingualInfo | null {
+function detectMultilingual(scope: SiteScope, urls: string[]): MultilingualInfo | null {
+  const baseHost = scope.origin;
   // Strategy 1: Check for language subdirectories
-  // e.g. /en/about/, /de/about/, /fr/about/
+  // e.g. /en/about/, /de/about/, /fr/about/ (relative to the scope base path)
   const firstSegments = new Map<string, number>();
 
   for (const url of urls) {
     try {
-      const parsed = new URL(url);
-      if (parsed.origin !== baseHost) continue;
-
-      const firstPart = parsed.pathname.split("/").filter(Boolean)[0];
+      const firstPart = scopedParts(url, scope)?.[0];
       const lang = firstPart ? matchLocaleSegment(firstPart) : null;
       if (lang) {
         firstSegments.set(lang, (firstSegments.get(lang) || 0) + 1);
