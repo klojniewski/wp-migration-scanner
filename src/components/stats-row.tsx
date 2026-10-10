@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import type { ScanResult } from "@/types";
+import type { ContentType, ScanResult } from "@/types";
 
 interface StatsRowProps {
   data: ScanResult;
+  contentTypes?: ContentType[];
+  fromAudit?: boolean;
 }
 
-export function StatsRow({ data }: StatsRowProps) {
-  const totalItems = data.contentTypes.reduce((sum, ct) => sum + ct.count, 0);
+export function StatsRow({ data, contentTypes = data.contentTypes, fromAudit = false }: StatsRowProps) {
+  const totalItems = contentTypes.reduce((sum, ct) => sum + ct.count, 0);
   const langCount = data.urlStructure?.multilingual?.languages.length ?? 0;
   const indexedUrls = data.urlStructure?.totalIndexedUrls ?? 0;
 
   const stats = [
     {
-      value: data.contentTypes.length,
+      value: contentTypes.length,
       label: "Content Types",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,7 +25,9 @@ export function StatsRow({ data }: StatsRowProps) {
           <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
         </svg>
       ),
-      tooltip: data.apiAvailable
+      tooltip: fromAudit
+        ? "From the uploaded server audit: every post type with content, including types hidden from the REST API."
+        : data.apiAvailable
         ? "Discovered via the WordPress REST API (/wp-json/wp/v2/types), excluding internal types like attachments and nav menus."
         : "Inferred from sitemap URL patterns and RSS feed data (REST API was unavailable).",
     },
@@ -39,7 +43,9 @@ export function StatsRow({ data }: StatsRowProps) {
           <path d="M16 17H8" />
         </svg>
       ),
-      tooltip: data.apiAvailable
+      tooltip: fromAudit
+        ? "Sum of items from the server audit (published plus drafts, private and scheduled)."
+        : data.apiAvailable
         ? "Sum of items across all content types, using counts from the REST API X-WP-Total header."
         : "Sum of URLs found per content type group in the XML sitemap.",
     },

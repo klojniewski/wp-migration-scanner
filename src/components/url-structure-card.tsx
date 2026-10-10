@@ -55,7 +55,7 @@ export function UrlStructureCard({ urlStructure, baseUrl }: UrlStructureCardProp
                     className={`py-2 px-4 align-middle ${i < urlStructure.patterns.length - 1 ? "border-b border-[var(--border)]" : ""}`}
                   >
                     <a
-                      href={`${baseUrl}${p.example}`}
+                      href={`${new URL(baseUrl).origin}${p.example}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-[11px] text-[var(--report-text-muted)] hover:text-[var(--report-blue)] max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap block transition-colors"

@@ -4,6 +4,7 @@ import type { MigrationScope } from "@/types";
 
 interface MigrationScopeCardProps {
   scope: MigrationScope;
+  fullAnalysis?: boolean;
 }
 
 const COLOR_MAP: Record<string, { bg: string; text: string }> = {
@@ -15,12 +16,15 @@ const COLOR_MAP: Record<string, { bg: string; text: string }> = {
   blue: { bg: "var(--report-blue-dim)", text: "var(--report-blue)" },
 };
 
-export function MigrationScopeCard({ scope }: MigrationScopeCardProps) {
+export function MigrationScopeCard({ scope, fullAnalysis = false }: MigrationScopeCardProps) {
   return (
     <section className="py-10 border-b-0">
       <div className="flex items-baseline justify-between mb-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--report-accent)]">
           Migration Scope Summary
+        </span>
+        <span className="text-[12px] text-[var(--report-text-muted)] font-mono">
+          {fullAnalysis ? "public scan + server audit" : "public scan only"}
         </span>
       </div>
       <div className="bg-[var(--report-surface)] border border-[var(--border)] rounded-[var(--radius)] p-7 px-8">

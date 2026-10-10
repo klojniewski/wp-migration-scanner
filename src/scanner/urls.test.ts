@@ -69,9 +69,26 @@ describe("analyzeUrls", () => {
       "https://other.com/page/",
     ];
     const result = analyzeUrls(BASE, urls);
-    expect(result.totalIndexedUrls).toBe(2);
+    expect(result.totalIndexedUrls).toBe(1);
     expect(result.patterns).toHaveLength(1);
     expect(result.patterns[0].count).toBe(1);
+  });
+
+  it("scopes analysis to a subdirectory install (e.g. /blog)", () => {
+    const urls = [
+      `${BASE}/services/sanity-development`,
+      `${BASE}/case-studies/acme`,
+      `${BASE}/blog/hello-world/`,
+      `${BASE}/blog/second-post/`,
+      `${BASE}/blog/category/react/`,
+      `${BASE}/blogger-page/`,
+    ];
+    const result = analyzeUrls(`${BASE}/blog`, urls);
+    expect(result.totalIndexedUrls).toBe(3);
+    const patterns = result.patterns.map((p) => p.pattern);
+    expect(patterns).toContain("/blog/{page}/");
+    expect(patterns).toContain("/blog/category/{slug}/");
+    expect(patterns.some((p) => p.startsWith("/services"))).toBe(false);
   });
 
   it("returns null multilingual when no language prefixes", () => {

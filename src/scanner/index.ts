@@ -22,7 +22,14 @@ async function resolveRedirects(
       signal: AbortSignal.timeout(10_000),
     });
     const final = new URL(res.url);
-    return `${final.protocol}//${final.host}`;
+    const origin = `${final.protocol}//${final.host}`;
+    // A root URL stays at the root even if the server redirects it to /en/ etc.
+    // so multilingual roots aren't narrowed to one locale. A URL with a path
+    // (e.g. /blog for a WordPress install in a subdirectory) keeps its
+    // resolved path so the whole scan stays inside that install.
+    const inputPath = new URL(url).pathname.replace(/\/+$/, "");
+    if (!inputPath) return origin;
+    return `${origin}${final.pathname.replace(/\/+$/, "")}`;
   } catch {
     return url;
   }

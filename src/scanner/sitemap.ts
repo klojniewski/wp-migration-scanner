@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { type Fetcher, fetchXml } from "./http";
+import { getScope, isInScope, scopedParts } from "./scope";
 
 export interface SitemapGroup {
   pattern: string;
@@ -55,15 +56,12 @@ export function parseSitemapXml(xml: string):
 /** Pure function — groups page URLs by first path segment */
 export function groupSitemapUrls(baseUrl: string, urls: string[]): SitemapGroup[] {
   const groups = new Map<string, string[]>();
-  const baseHost = new URL(baseUrl).origin;
+  const scope = getScope(baseUrl);
 
   for (const url of urls) {
     try {
-      const parsed = new URL(url);
-      if (parsed.origin !== baseHost) continue;
-
-      const pathParts = parsed.pathname.split("/").filter(Boolean);
-      if (pathParts.length === 0) continue;
+      const pathParts = scopedParts(url, scope);
+      if (!pathParts || pathParts.length === 0) continue;
 
       const pattern = pathParts.length === 1 ? "(pages)" : pathParts[0];
       const existing = groups.get(pattern) || [];
@@ -84,10 +82,25 @@ export async function fetchSitemap(
   baseUrl: string,
   fetcher: Fetcher = globalThis.fetch,
 ): Promise<SitemapResult> {
+  const scope = getScope(baseUrl);
+  // Prefer the install's own sitemap (/blog/sitemap.xml); fall back to the
+  // domain root, whose URLs are then filtered to the scope below.
+  const roots = scope.basePath ? [baseUrl, scope.origin] : [baseUrl];
+
+  for (const root of roots) {
+    const urls = (await fetchSitemapAt(root, fetcher)).filter((u) => isInScope(u, scope));
+    if (urls.length > 0) {
+      return { groups: groupSitemapUrls(baseUrl, urls), allUrls: urls };
+    }
+  }
+  return { groups: [], allUrls: [] };
+}
+
+async function fetchSitemapAt(root: string, fetcher: Fetcher): Promise<string[]> {
   let allUrls: string[] = [];
 
   for (const path of SITEMAP_PATHS) {
-    const xml = await fetchXml(`${baseUrl}${path}`, fetcher);
+    const xml = await fetchXml(`${root}${path}`, fetcher);
     if (!xml) continue;
 
     const result = parseSitemapXml(xml);
@@ -116,7 +129,5 @@ export async function fetchSitemap(
     }
   }
 
-  if (allUrls.length === 0) return { groups: [], allUrls: [] };
-
-  return { groups: groupSitemapUrls(baseUrl, allUrls), allUrls };
+  return allUrls;
 }
