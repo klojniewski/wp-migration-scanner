@@ -56,7 +56,7 @@ export function ScanResults({ data, onReset }: ScanResultsProps) {
       <div className="max-w-[960px] mx-auto px-6">
           <ReportHeader data={data} />
           <FallbackNotice data={data} />
-          <StatsRow data={data} />
+          <StatsRow data={data} contentTypes={contentTypes} fromAudit={analysis != null} />
           <AuditUpload
             audit={audit}
             siteHome={analysis?.siteHome ?? null}
